@@ -58,7 +58,10 @@ export interface Technology {
 
 export interface TeamMember {
   name: string;
+  /** Sigla del cargo, mostrada en la foto de portada, p.ej. "CEO". */
   role: string;
+  /** Nombre completo del cargo, mostrado al girar la tarjeta, p.ej. "Chief Executive Officer". */
+  roleFull: string;
   headline: string;
   summary: string;
   highlights: string[];

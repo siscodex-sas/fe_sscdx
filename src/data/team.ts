@@ -4,6 +4,7 @@ export const team: TeamMember[] = [
   {
     name: "Fherney Silva",
     role: "CEO",
+    roleFull: "Chief Executive Officer",
     headline: "Estrategia e Innovación Corporativa",
     summary:
       "Visionario tecnológico y líder de negocios que define la estrategia global de la compañía, impulsando el crecimiento mediante IA, Cloud-Native y automatización inteligente.",
@@ -19,6 +20,7 @@ export const team: TeamMember[] = [
   {
     name: "Duban Silva",
     role: "CTO",
+    roleFull: "Chief Technology Officer",
     headline: "Visión Tecnológica y Arquitectura Cloud",
     summary:
       "Líder técnico integral que orquesta la visión tecnológica y la arquitectura empresarial, dirigiendo ecosistemas Cloud escalables, seguros y de vanguardia.",
@@ -33,6 +35,7 @@ export const team: TeamMember[] = [
   {
     name: "Juan Ríos",
     role: "CPO",
+    roleFull: "Chief Product Officer",
     headline: "Estrategia de Producto y Experiencia Digital",
     summary:
       "Estratega de producto con ADN técnico que lidera todo el ciclo de vida del producto, desde el roadmap hasta el lanzamiento, maximizando el valor para el usuario.",
