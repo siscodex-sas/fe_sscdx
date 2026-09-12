@@ -19,10 +19,4 @@ export const team: TeamMember[] = [
     focus: "Producto, roadmap y experiencia de cliente.",
     photo: "/team/juan-rios.jpeg",
   },
-  {
-    name: "Javier Pancha",
-    role: "COO",
-    focus: "Operaciones, entrega y procesos internos.",
-    photo: "/team/javier-pancha.jpeg",
-  },
 ];
