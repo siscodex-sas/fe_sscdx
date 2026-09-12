@@ -21,6 +21,14 @@ export default defineConfig({
   output: "static",
   compressHTML: true,
 
+  // /servicios y /soluciones dejaron de ser páginas propias (su contenido se
+  // fusionó en el home) — se mantienen como redirects estáticos (meta-refresh)
+  // para no romper bookmarks/enlaces externos ya indexados.
+  redirects: {
+    "/servicios": "/#servicios",
+    "/soluciones": "/#soluciones",
+  },
+
   integrations: [
     sitemap({
       changefreq: "weekly",

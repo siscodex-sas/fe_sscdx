@@ -19,18 +19,22 @@ const currentPath = new URL(Astro.request.url).pathname;
 
     <div class="hidden items-center gap-8 md:flex">
       {
-        mainNavAnchors.map((link) => (
-          <a
-            href={withBase(link.href)}
-            aria-current={currentPath === withBase(link.href) ? "page" : undefined}
-            class:list={[
-              "text-sm font-medium text-ink-300 transition-colors duration-200 hover:text-brand-300",
-              currentPath === withBase(link.href) && "text-brand-300",
-            ]}
-          >
-            {link.label}
-          </a>
-        ))
+        mainNavAnchors.map((link) => {
+          const anchorPath = withBase(link.href.split("#")[0] || "/");
+          const isActive = currentPath === anchorPath;
+          return (
+            <a
+              href={withBase(link.href)}
+              aria-current={isActive ? "page" : undefined}
+              class:list={[
+                "text-sm font-medium text-ink-300 transition-colors duration-200 hover:text-brand-300",
+                isActive && "text-brand-300",
+              ]}
+            >
+              {link.label}
+            </a>
+          );
+        })
       }
 
       <span class="text-ink-700" aria-hidden="true">|</span>

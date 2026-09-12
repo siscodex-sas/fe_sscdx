@@ -14,6 +14,7 @@ const { member } = Astro.props;
   <div class="team-flip-inner relative h-full w-full transition-transform duration-500 ease-out">
     <button
       type="button"
+      data-team-flip-face="front"
       class="team-flip-face absolute inset-0 cursor-pointer overflow-hidden rounded-lg border border-ink-700/80 text-left transition-colors duration-300 hover:border-gold-400/40"
       data-team-flip-toggle
       aria-expanded="false"
@@ -34,12 +35,19 @@ const { member } = Astro.props;
     </button>
 
     <div
+      data-team-flip-face="back"
+      inert
       class="team-flip-face team-flip-back absolute inset-0 flex cursor-pointer flex-col rounded-lg border border-gold-400/40 bg-ink-900 p-6"
       data-team-flip-toggle
-      role="button"
-      tabindex="0"
-      aria-label={`Cerrar perfil de ${member.name}`}
     >
+      <button
+        type="button"
+        data-team-flip-toggle
+        class="sr-only focus:not-sr-only focus:absolute focus:right-4 focus:top-4 focus:z-10 focus:size-8 focus:rounded-full focus:bg-gold-400/10 focus:text-gold-400"
+      >
+        {`Cerrar perfil de ${member.name}`}
+      </button>
+
       <span class="font-mono text-xs uppercase tracking-[0.15em] text-ember-400">{member.roleFull}</span>
       <h3 class="mt-1 text-lg font-semibold text-white">{member.name}</h3>
       <p class="mt-1 text-xs font-medium text-brand-400">{member.headline}</p>

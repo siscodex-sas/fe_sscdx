@@ -26,8 +26,11 @@ import { team } from "@/data/team";
     const isFlipped = card.getAttribute("data-flipped") === "true";
     card.setAttribute("data-flipped", String(!isFlipped));
 
-    const frontTrigger = card.querySelector("[data-team-flip-toggle][aria-expanded]");
-    frontTrigger?.setAttribute("aria-expanded", String(!isFlipped));
+    const frontFace = card.querySelector('[data-team-flip-face="front"]');
+    const backFace = card.querySelector('[data-team-flip-face="back"]');
+    frontFace?.setAttribute("aria-expanded", String(!isFlipped));
+    frontFace?.toggleAttribute("inert", !isFlipped);
+    backFace?.toggleAttribute("inert", isFlipped);
   }
 
   document.addEventListener("click", (event) => {
@@ -36,18 +39,5 @@ import { team } from "@/data/team";
 
     const trigger = target.closest("[data-team-flip-toggle]");
     if (trigger) toggleFlip(trigger);
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter" && event.key !== " ") return;
-
-    const target = event.target;
-    if (!(target instanceof Element) || target.closest("a")) return;
-
-    const trigger = target.closest('[data-team-flip-toggle][role="button"]');
-    if (!trigger) return;
-
-    event.preventDefault();
-    toggleFlip(trigger);
   });
 </script>

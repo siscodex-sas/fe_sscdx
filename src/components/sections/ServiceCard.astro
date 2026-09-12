@@ -13,10 +13,14 @@ const { service } = Astro.props;
   <button
     type="button"
     aria-label={`Ver detalle de ${service.title}`}
+    aria-expanded="false"
     class="grid h-full w-full cursor-pointer text-left transition-transform duration-500 [transform-style:preserve-3d] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-400"
     data-service-card-inner
   >
-    <div class="relative flex h-full flex-col overflow-hidden rounded-lg border border-ink-700/80 bg-ink-800/40 p-7 backdrop-blur-xl transition-all duration-300 [backface-visibility:hidden] [grid-area:1/1] group-hover:-translate-y-1 group-hover:border-brand-400/40">
+    <div
+      data-service-card-face="front"
+      class="relative flex h-full flex-col overflow-hidden rounded-lg border border-ink-700/80 bg-ink-800/40 p-7 backdrop-blur-xl transition-all duration-300 [backface-visibility:hidden] [grid-area:1/1] group-hover:-translate-y-1 group-hover:border-brand-400/40"
+    >
       <div class="pointer-events-none absolute right-0 top-0 size-32 rounded-bl-full bg-brand-500/0 transition-colors duration-300 group-hover:bg-brand-500/10" />
 
       <div class="flex items-center justify-between">
@@ -34,7 +38,11 @@ const { service } = Astro.props;
       </span>
     </div>
 
-    <div class="relative flex h-full flex-col overflow-hidden rounded-lg border border-brand-400/40 bg-ink-800/60 p-7 backdrop-blur-xl [backface-visibility:hidden] [grid-area:1/1] [transform:rotateY(180deg)]">
+    <div
+      data-service-card-face="back"
+      aria-hidden="true"
+      class="relative flex h-full flex-col overflow-hidden rounded-lg border border-brand-400/40 bg-ink-800/60 p-7 backdrop-blur-xl [backface-visibility:hidden] [grid-area:1/1] [transform:rotateY(180deg)]"
+    >
       <div class="flex items-center justify-between">
         <span class="font-mono text-sm text-gold-400">{service.index}</span>
         <span class="flex size-11 items-center justify-center rounded-lg bg-gold-400/10 text-gold-400">
@@ -72,6 +80,9 @@ const { service } = Astro.props;
     const trigger = target instanceof Element ? target.closest("[data-service-card-inner]") : null;
     if (!trigger) return;
 
-    trigger.classList.toggle("is-flipped");
+    const isFlipped = trigger.classList.toggle("is-flipped");
+    trigger.setAttribute("aria-expanded", String(isFlipped));
+    trigger.querySelector('[data-service-card-face="front"]')?.setAttribute("aria-hidden", String(isFlipped));
+    trigger.querySelector('[data-service-card-face="back"]')?.setAttribute("aria-hidden", String(!isFlipped));
   });
 </script>
