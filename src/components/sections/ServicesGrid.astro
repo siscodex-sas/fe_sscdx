@@ -2,25 +2,18 @@
 import ServiceCard from "@/components/sections/ServiceCard.astro";
 import SectionTitle from "@/components/ui/SectionTitle.astro";
 import { services } from "@/data/services";
-
-interface Props {
-  limit?: number;
-}
-
-const { limit } = Astro.props;
-const items = limit ? services.slice(0, limit) : services;
 ---
 
 <section class="py-24" id="servicios">
   <div class="mx-auto max-w-(--container-page) px-4 sm:px-6 lg:px-8">
     <SectionTitle
       eyebrow="Servicios"
-      title="Ingeniería de software integral"
-      description="Soluciones adaptadas a las necesidades tecnológicas de tu empresa, de la arquitectura al despliegue."
+      title="Soluciones de ingeniería para cada etapa de tu producto"
+      description="Desde el primer prototipo hasta la operación a escala, cubrimos todo el ciclo de vida del software empresarial."
     />
 
     <div class="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {items.map((service) => <ServiceCard service={service} />)}
+      {services.map((service) => <ServiceCard service={service} />)}
     </div>
   </div>
 </section>

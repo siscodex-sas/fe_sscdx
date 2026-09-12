@@ -51,6 +51,9 @@
   /* ---------- Ember: naranja de prueba para labels de rol (mismo H/S/L que brand-400, matiz rotado) ---------- */
   --color-ember-400: #d38434;
 
+  /* ---------- Gold: acento dorado secundario, aprobado en la exploración "acento dual" (verde sigue siendo el color primario) ---------- */
+  --color-gold-400: #e3a94a;
+
   /* ---------- Radios y contenedor ---------- */
   --radius-sm: 0.375rem;
   --radius-md: 0.625rem;
@@ -120,7 +123,7 @@
     @apply bg-ink-950 font-sans text-ink-100 antialiased;
     background-image:
       radial-gradient(ellipse 60% 40% at 90% 0%, color-mix(in srgb, var(--color-brand-500) 12%, transparent), transparent),
-      radial-gradient(ellipse 50% 40% at 5% 15%, color-mix(in srgb, var(--color-accent-500) 10%, transparent), transparent);
+      radial-gradient(ellipse 50% 40% at 5% 15%, color-mix(in srgb, var(--color-gold-400) 10%, transparent), transparent);
     background-repeat: no-repeat;
   }
 

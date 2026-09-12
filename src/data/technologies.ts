@@ -17,6 +17,7 @@ export const technologies: Technology[] = [
   { name: "API Gateway", icon: "logos:aws-api-gateway", category: "cloud" },
   { name: "CloudFront", icon: "logos:aws-cloudfront", category: "cloud" },
   { name: "DynamoDB", icon: "logos:aws-dynamodb", category: "cloud" },
+  { name: "AWS Batch", icon: "logos:aws-batch", category: "cloud" },
   { name: "Docker", icon: "logos:docker-icon", category: "devops" },
   { name: "Kubernetes", icon: "logos:kubernetes", category: "devops" },
   { name: "GitHub Actions", icon: "logos:github-actions", category: "devops" },

@@ -8,16 +8,14 @@ export const services: Service[] = [
     description:
       "Construimos plataformas robustas desde cero, adaptadas exactamente a tus flujos de negocio. Priorizamos código limpio, pruebas automatizadas y arquitecturas resilientes.",
     bullets: ["Aplicaciones web", "Apps móviles (iOS / Android)", "APIs y microservicios"],
-    href: "/servicios#desarrollo-a-medida",
   },
   {
     index: "02",
     icon: "cloud-cog",
-    title: "Infraestructura y arquitectura cloud",
+    title: "Infraestructura y arquitectura cloud en AWS",
     description:
-      "Diseñamos, implementamos y gestionamos infraestructura segura en la nube. Optimizamos costos sin sacrificar disponibilidad ni rendimiento.",
-    bullets: ["Migración a la nube", "Pipelines de DevOps", "Arquitectura serverless"],
-    href: "/servicios#cloud",
+      "Diseñamos, implementamos y gestionamos infraestructura segura en AWS, incluyendo procesamiento batch a gran escala. Garantizamos calidad, mantenibilidad y eficiencia, reduciendo los costos de mantenimiento sin sacrificar disponibilidad ni rendimiento.",
+    bullets: ["Arquitectura y migración en AWS", "Procesamiento batch a gran escala", "Pipelines de DevOps y seguridad", "Optimización de costos operativos"],
   },
   {
     index: "03",
@@ -26,7 +24,6 @@ export const services: Service[] = [
     description:
       "Integramos IA generativa y modelos de machine learning en productos existentes o nuevos, con foco en casos de uso medibles para el negocio.",
     bullets: ["Automatización con LLMs", "Agentes y copilotos internos", "Analítica predictiva"],
-    href: "/servicios#ia",
   },
   {
     index: "04",
@@ -35,7 +32,6 @@ export const services: Service[] = [
     description:
       "Tomamos sistemas legados, los refactorizamos y preparamos para escalar. Resolvemos cuellos de botella técnicos sin detener el negocio.",
     bullets: ["De monolito a microservicios", "Optimización de rendimiento", "Tuning de bases de datos"],
-    href: "/servicios#modernizacion",
   },
   {
     index: "05",
@@ -44,7 +40,6 @@ export const services: Service[] = [
     description:
       "Desarrollamos sistemas internos, ERPs y herramientas de gestión a medida que se integran con tu operación existente.",
     bullets: ["Integraciones con terceros", "Portales internos", "Automatización de procesos"],
-    href: "/servicios#sistemas-empresariales",
   },
   {
     index: "06",
@@ -53,7 +48,6 @@ export const services: Service[] = [
     description:
       "Integramos ingenieros senior directamente en tu equipo, con la misma exigencia técnica que aplicamos en nuestros propios proyectos.",
     bullets: ["Equipos dedicados", "Onboarding rápido", "Reportes de avance semanales"],
-    href: "/servicios#staff-augmentation",
   },
 ];
 
@@ -65,8 +59,8 @@ export const advantages: Advantage[] = [
   },
   {
     icon: "cloud",
-    title: "Infraestructura cloud",
-    description: "Especialistas en la nube: arquitecturas eficientes, seguras y optimizadas para alto rendimiento.",
+    title: "Infraestructura AWS",
+    description: "Expertos en la nube e infraestructura AWS: arquitecturas eficientes y seguras, con procesamiento batch a gran escala.",
   },
   {
     icon: "trending-up",
@@ -75,8 +69,18 @@ export const advantages: Advantage[] = [
   },
   {
     icon: "badge-check",
-    title: "Seniority",
-    description: "Ingenieros senior en cada línea de código: calidad, mantenibilidad y buenas prácticas por defecto.",
+    title: "Calidad y mantenibilidad",
+    description: "Ingenieros senior en cada línea de código: garantizamos calidad, mantenibilidad y buenas prácticas por defecto.",
+  },
+  {
+    icon: "piggy-bank",
+    title: "Ahorro de costos",
+    description: "Optimizamos infraestructura y arquitectura para reducir los costos de mantenimiento de tu aplicación sin sacrificar rendimiento.",
+  },
+  {
+    icon: "shield-check",
+    title: "Seguridad garantizada",
+    description: "Aplicamos buenas prácticas de seguridad en cada capa: desde la infraestructura cloud hasta el código de tu aplicación.",
   },
 ];
 

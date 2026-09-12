@@ -15,7 +15,6 @@ export interface Service {
   title: string;
   description: string;
   bullets: string[];
-  href: string;
 }
 
 export interface Advantage {
@@ -59,9 +58,16 @@ export interface Technology {
 
 export interface TeamMember {
   name: string;
+  /** Sigla del cargo, mostrada en la foto de portada, p.ej. "CEO". */
   role: string;
-  focus: string;
+  /** Nombre completo del cargo, mostrado al girar la tarjeta, p.ej. "Chief Executive Officer". */
+  roleFull: string;
+  headline: string;
+  summary: string;
+  highlights: string[];
   photo: string;
+  linkedin: string;
+  website?: string;
 }
 
 export interface Resource {
