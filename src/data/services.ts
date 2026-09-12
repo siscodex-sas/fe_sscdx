@@ -13,10 +13,10 @@ export const services: Service[] = [
   {
     index: "02",
     icon: "cloud-cog",
-    title: "Infraestructura y arquitectura cloud",
+    title: "Infraestructura y arquitectura cloud en AWS",
     description:
-      "Diseñamos, implementamos y gestionamos infraestructura segura en la nube. Optimizamos costos sin sacrificar disponibilidad ni rendimiento.",
-    bullets: ["Migración a la nube", "Pipelines de DevOps", "Arquitectura serverless"],
+      "Diseñamos, implementamos y gestionamos infraestructura segura en AWS, incluyendo procesamiento batch a gran escala. Garantizamos calidad, mantenibilidad y eficiencia, reduciendo los costos de mantenimiento sin sacrificar disponibilidad ni rendimiento.",
+    bullets: ["Arquitectura y migración en AWS", "Procesamiento batch a gran escala", "Pipelines de DevOps y seguridad", "Optimización de costos operativos"],
     href: "/servicios#cloud",
   },
   {
@@ -65,8 +65,8 @@ export const advantages: Advantage[] = [
   },
   {
     icon: "cloud",
-    title: "Infraestructura cloud",
-    description: "Especialistas en la nube: arquitecturas eficientes, seguras y optimizadas para alto rendimiento.",
+    title: "Infraestructura AWS",
+    description: "Expertos en la nube e infraestructura AWS: arquitecturas eficientes y seguras, con procesamiento batch a gran escala.",
   },
   {
     icon: "trending-up",
@@ -75,8 +75,18 @@ export const advantages: Advantage[] = [
   },
   {
     icon: "badge-check",
-    title: "Seniority",
-    description: "Ingenieros senior en cada línea de código: calidad, mantenibilidad y buenas prácticas por defecto.",
+    title: "Calidad y mantenibilidad",
+    description: "Ingenieros senior en cada línea de código: garantizamos calidad, mantenibilidad y buenas prácticas por defecto.",
+  },
+  {
+    icon: "piggy-bank",
+    title: "Ahorro de costos",
+    description: "Optimizamos infraestructura y arquitectura para reducir los costos de mantenimiento de tu aplicación sin sacrificar rendimiento.",
+  },
+  {
+    icon: "shield-check",
+    title: "Seguridad garantizada",
+    description: "Aplicamos buenas prácticas de seguridad en cada capa: desde la infraestructura cloud hasta el código de tu aplicación.",
   },
 ];
 

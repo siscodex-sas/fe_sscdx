@@ -54,6 +54,7 @@ export default defineConfig({
           "aws-api-gateway",
           "aws-cloudfront",
           "aws-dynamodb",
+          "aws-batch",
           "angular-icon",
           "java",
         ],

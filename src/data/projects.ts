@@ -12,8 +12,14 @@ export const projects: Project[] = [
     title: "Cloud & Infraestructura",
     category: "cloud",
     summary:
-      "Diseñamos y operamos arquitecturas cloud seguras, escalables y optimizadas en costo, listas para crecer con tu negocio.",
-    capabilities: ["Migración a la nube", "Arquitecturas serverless", "Alta disponibilidad y DR", "Monitoreo y observabilidad 24/7"],
+      "Diseñamos y operamos arquitecturas cloud en AWS, seguras, escalables y optimizadas en costo — con procesamiento batch a gran escala y garantía de calidad y mantenibilidad, listas para crecer con tu negocio.",
+    capabilities: [
+      "Migración y arquitectura en AWS",
+      "Procesamiento batch a gran escala",
+      "Alta disponibilidad y DR",
+      "Monitoreo y observabilidad 24/7",
+      "Optimización de costos de mantenimiento",
+    ],
     idealFor: ["Empresas en crecimiento", "Equipos sin infraestructura propia", "Negocios con picos de tráfico"],
   },
   {
