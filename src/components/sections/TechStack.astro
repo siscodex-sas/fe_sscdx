@@ -1,16 +1,18 @@
 ---
 import SectionTitle from "@/components/ui/SectionTitle.astro";
 import TechnologyBadge from "@/components/ui/TechnologyBadge.astro";
+import Button from "@/components/ui/Button.astro";
 import { technologies } from "@/data/technologies";
 
 interface Props {
   align?: "left" | "center";
+  showViewAllLink?: boolean;
 }
 
-const { align = "center" } = Astro.props;
+const { align = "center", showViewAllLink = false } = Astro.props;
 ---
 
-<section class="py-24">
+<section class="py-24" id="tecnologia">
   <div class="mx-auto max-w-(--container-page) px-4 sm:px-6 lg:px-8">
     <SectionTitle
       align={align}
@@ -23,5 +25,15 @@ const { align = "center" } = Astro.props;
     <div class:list={["mt-10 flex flex-wrap gap-3", align === "center" && "justify-center"]}>
       {technologies.map((tech) => <TechnologyBadge name={tech.name} icon={tech.icon} />)}
     </div>
+
+    {
+      showViewAllLink && (
+        <div class="mt-10 flex justify-center">
+          <Button href="/tecnologia" variant="secondary" icon="arrow-right">
+            Ver todo el stack tecnológico
+          </Button>
+        </div>
+      )
+    }
   </div>
 </section>
