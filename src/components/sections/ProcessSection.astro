@@ -15,12 +15,12 @@ import { processSteps, processCapabilities } from "@/data/services";
     />
 
     <div class="relative mt-16 grid grid-cols-1 gap-10 md:grid-cols-4">
-      <div class="absolute top-6 left-[12%] right-[12%] hidden h-px bg-brand-500/40 md:block"></div>
+      <div class="absolute top-6 left-[12%] right-[12%] hidden h-px bg-gold-400/40 md:block"></div>
 
       {
         processSteps.map((step) => (
           <div class="relative flex flex-col items-center text-center" data-reveal>
-            <div class="flex size-12 items-center justify-center rounded-full border-2 border-brand-400 bg-ink-950 font-mono text-sm text-brand-300">
+            <div class="flex size-12 items-center justify-center rounded-full border-2 border-gold-400 bg-ink-950 font-mono text-sm text-gold-400">
               {step.number}
             </div>
             <h3 class="mt-5 text-base font-semibold text-ink-50">{step.title}</h3>

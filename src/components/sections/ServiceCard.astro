@@ -1,6 +1,5 @@
 ---
 import { Icon } from "astro-icon/components";
-import { withBase } from "@/utils/url";
 import type { Service } from "@/types";
 
 interface Props {
@@ -10,36 +9,69 @@ interface Props {
 const { service } = Astro.props;
 ---
 
-<a
-  href={withBase(service.href)}
-  class="group relative flex h-full flex-col overflow-hidden rounded-lg border border-ink-700/80 bg-ink-800/40 p-7 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-brand-400/40"
-  data-reveal
->
-  <div
-    class="pointer-events-none absolute right-0 top-0 size-32 rounded-bl-full bg-brand-500/0 transition-colors duration-300 group-hover:bg-brand-500/10"
+<div class="group h-full min-h-72 [perspective:1200px]" data-service-card>
+  <button
+    type="button"
+    aria-label={`Ver detalle de ${service.title}`}
+    class="grid h-full w-full cursor-pointer text-left transition-transform duration-500 [transform-style:preserve-3d] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-400"
+    data-service-card-inner
   >
-  </div>
+    <div class="relative flex h-full flex-col overflow-hidden rounded-lg border border-ink-700/80 bg-ink-800/40 p-7 backdrop-blur-xl transition-all duration-300 [backface-visibility:hidden] [grid-area:1/1] group-hover:-translate-y-1 group-hover:border-brand-400/40">
+      <div class="pointer-events-none absolute right-0 top-0 size-32 rounded-bl-full bg-brand-500/0 transition-colors duration-300 group-hover:bg-brand-500/10" />
 
-  <div class="flex items-center justify-between">
-    <span class="font-mono text-sm text-brand-400">{service.index}</span>
-    <span
-      class="flex size-11 items-center justify-center rounded-lg bg-ink-700/60 text-brand-400 transition-colors group-hover:bg-brand-400/10"
-    >
-      <Icon name={`lucide:${service.icon}`} class="size-5" />
-    </span>
-  </div>
+      <div class="flex items-center justify-between">
+        <span class="font-mono text-sm text-gold-400">{service.index}</span>
+        <span class="flex size-11 items-center justify-center rounded-lg bg-ink-700/60 text-gold-400 transition-colors group-hover:bg-gold-400/10">
+          <Icon name={`lucide:${service.icon}`} class="size-5" />
+        </span>
+      </div>
 
-  <h3 class="mt-5 text-lg font-semibold text-ink-50">{service.title}</h3>
-  <p class="mt-3 flex-grow text-sm leading-relaxed text-ink-300">{service.description}</p>
+      <h3 class="mt-5 text-lg font-semibold text-ink-50">{service.title}</h3>
+      <p class="mt-3 flex-grow text-sm leading-relaxed text-ink-300">{service.description}</p>
 
-  <ul class="mt-6 flex flex-col gap-2 border-t border-ink-700 pt-5 font-mono text-xs text-ink-400">
-    {
-      service.bullets.map((bullet) => (
-        <li class="flex items-center gap-2">
-          <span class="text-brand-400/60">–</span>
-          {bullet}
-        </li>
-      ))
-    }
-  </ul>
-</a>
+      <span class="pointer-events-none absolute bottom-5 right-5 flex size-8 items-center justify-center rounded-full bg-ink-700/60 text-brand-400/70 opacity-0 transition-all duration-300 group-hover:scale-110 group-hover:bg-brand-400/10 group-hover:text-brand-300 group-hover:opacity-100">
+        <Icon name="lucide:rotate-3d" class="size-4" />
+      </span>
+    </div>
+
+    <div class="relative flex h-full flex-col overflow-hidden rounded-lg border border-brand-400/40 bg-ink-800/60 p-7 backdrop-blur-xl [backface-visibility:hidden] [grid-area:1/1] [transform:rotateY(180deg)]">
+      <div class="flex items-center justify-between">
+        <span class="font-mono text-sm text-gold-400">{service.index}</span>
+        <span class="flex size-11 items-center justify-center rounded-lg bg-gold-400/10 text-gold-400">
+          <Icon name={`lucide:${service.icon}`} class="size-5" />
+        </span>
+      </div>
+
+      <h3 class="mt-5 text-lg font-semibold text-ink-50">{service.title}</h3>
+
+      <ul class="mt-4 flex flex-grow flex-col justify-center gap-2.5 font-mono text-xs text-ink-300">
+        {service.bullets.map((bullet) => (
+          <li class="flex items-center gap-2">
+            <span class="text-gold-400/70">–</span>
+            {bullet}
+          </li>
+        ))}
+      </ul>
+
+      <span class="pointer-events-none absolute bottom-5 right-5 flex size-8 items-center justify-center rounded-full bg-brand-400/10 text-brand-300">
+        <Icon name="lucide:rotate-3d" class="size-4" />
+      </span>
+    </div>
+  </button>
+</div>
+
+<style>
+  [data-service-card-inner].is-flipped {
+    transform: rotateY(180deg);
+  }
+</style>
+
+<script>
+  document.addEventListener("click", (event) => {
+    const target = event.target;
+    const trigger = target instanceof Element ? target.closest("[data-service-card-inner]") : null;
+    if (!trigger) return;
+
+    trigger.classList.toggle("is-flipped");
+  });
+</script>
