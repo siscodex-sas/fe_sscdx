@@ -2,13 +2,6 @@
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import PageHeader from "@/components/sections/PageHeader.astro";
 import ContactForm from "@/components/sections/ContactForm.astro";
-import { Icon } from "astro-icon/components";
-
-const channels = [
-  { icon: "mail", label: "hola@siscodex.com", href: "mailto:hola@siscodex.com" },
-  { icon: "linkedin", label: "LinkedIn", href: "https://www.linkedin.com/company/siscodex" },
-  { icon: "github", label: "GitHub", href: "https://github.com/siscodex" },
-];
 ---
 
 <BaseLayout
@@ -21,26 +14,6 @@ const channels = [
     title="Iniciemos una conversación técnica"
     description="Respondemos en menos de 24 horas hábiles. Sin formularios interminables ni intermediarios comerciales."
   />
-
-  <section class="pb-16">
-    <div class="mx-auto max-w-(--container-page) px-4 sm:px-6 lg:px-8">
-      <div class="flex flex-wrap justify-center gap-4">
-        {
-          channels.map((channel) => (
-            <a
-              href={channel.href}
-              target={channel.href.startsWith("http") ? "_blank" : undefined}
-              rel={channel.href.startsWith("http") ? "noopener noreferrer" : undefined}
-              class="inline-flex items-center gap-2 rounded-md border border-ink-600 px-4 py-2.5 text-sm text-ink-200 transition-colors hover:border-brand-400/50 hover:text-brand-300"
-            >
-              <Icon name={`lucide:${channel.icon}`} class="size-4" />
-              {channel.label}
-            </a>
-          ))
-        }
-      </div>
-    </div>
-  </section>
 
   <ContactForm />
 </BaseLayout>
