@@ -58,14 +58,20 @@ funciona en local y en producción con dominio propio (`base: "/"`), pero se rom
 prueba en un GitHub Pages de proyecto (`base: "/fe_sscdx"`) — es exactamente el bug que se encontró
 y arregló la primera vez que se probó ahí (ver punto 7 de "Historial de decisiones").
 
-## Sistema de diseño actual (estado real, agosto 2026)
+## Sistema de diseño actual (estado real, septiembre 2026)
 
-- **Un solo acento de marca: verde esmeralda.** `brand-500 #10b981` / `brand-400 #34d399` es el
-  tono principal (botones, iconos, eyebrows). `accent-*` es una variación tonal (verde azulado)
-  usada solo para profundidad en gradientes/blobs de fondo — deliberadamente **no** es un segundo
-  color de marca independiente. Existe una única excepción puntual: `ember-400 #d38434` (naranja de
-  intensidad equivalente al verde), usado solo como color del label de rol en `TeamCard.astro`
-  (sección de equipo en `/nosotros`) — no es un acento de marca general, no se usa en botones ni CTAs.
+- **Acento primario: verde esmeralda. Acento secundario aprobado: dorado.** `brand-500 #10b981` /
+  `brand-400 #34d399` sigue siendo el tono principal (headline destacado del Hero, CTAs primarios,
+  la mayoría de iconos/eyebrows). `gold-400 #e3a94a` es un acento secundario real (no de prueba)
+  aprobado a partir de una exploración de diseño con dos candidatos (`#E3A94A` vs `#D9A15C`) y tres
+  tratamientos por candidato — se eligió "acento dual": el verde no se toca en headline/CTA
+  primario, y el dorado vive en el índice/icono/viñetas de `ServiceCard`, el círculo+línea del
+  timeline de `ProcessSection`, el marco de la cara trasera de `TeamCard`, y el blob inferior de
+  fondo del Hero/CTASection/body (antes era `accent-500`, teal). `accent-*` sigue existiendo en el
+  theme pero ya no se usa en ningún componente salvo como tercer color de `.text-gradient-brand` —
+  no confundir con el nuevo `gold-400`, son acentos distintos con roles distintos. Existe además
+  `ember-400 #d38434` (naranja), usado solo como color del label de rol en `TeamCard.astro` — no es
+  un acento de marca general, no se usa en botones ni CTAs.
 - **Fondo: gris carbón, no negro puro.** `ink-950 #1a1b1e` → `ink-50 #f8f8f9`. Se subió a
   propósito desde un casi-negro (`#0b0c0e`) porque se sentía "demasiado técnico/hacker" para
   audiencia no desarrolladora — ver punto 6 de "Historial de decisiones". Si alguien propone
@@ -119,10 +125,12 @@ propósito para igualar una referencia visual real que compartió el cliente.
    (b) **todo `href`/`src` interno escrito a mano en el markup no** — nav, footer, logo, favicon,
    sitemap. Se creó `src/utils/url.ts` (`withBase()`) y se aplicó en `Button.astro` + cada `<a>`/
    `<img>` interno suelto. Ver la "Segunda regla de oro" arriba.
-8. **Sección de Equipo**: se agregó `TeamSection`/`TeamCard` en `/nosotros` con las 4 fotos reales de
-   liderazgo (`public/team/*.jpeg`). Título/descripción se redactaron a propósito para no insinuar
-   que la empresa son solo 4 personas ("Hablas con el liderazgo desde el primer día — respaldado por
-   un equipo completo detrás de cada proyecto"). Introdujo el acento `ember-400` (ver arriba).
+8. **Sección de Equipo**: se agregó `TeamSection`/`TeamCard` en `/nosotros` con las 3 fotos reales de
+   liderazgo vigentes (`public/team/*.jpeg`: Fherney, Duban, Juan — un cuarto perfil, Javier Pancha,
+   se agregó y luego se quitó en ramas paralelas; si vuelve a aparecer en algún merge, confirmar con
+   el cliente antes de darlo por bueno). Título/descripción se redactaron a propósito para no insinuar
+   que la empresa son solo estas personas ("Hablas con el liderazgo desde el primer día — respaldado
+   por un equipo completo detrás de cada proyecto"). Introdujo el acento `ember-400` (ver arriba).
 9. **Soluciones pasó de grilla a pestañas, y de "stack técnico" a "para quién es esto"**: se
    eliminaron `ProjectsGrid`/`ProjectCard` (mostraban las 5 especialidades como tarjetas fijas) y se
    reemplazaron por `SpecialtiesTabs.astro` (pestañas, una especialidad visible a la vez, sin
@@ -160,6 +168,45 @@ propósito para igualar una referencia visual real que compartió el cliente.
     médicas", telemedicina, gestión de información clínica y de laboratorio — sin nombrar nunca al
     cliente específico. Si se agrega contenido nuevo de este sector, mantener el mismo nivel de
     generalidad.
+16. **`/servicios` y `/soluciones` dejaron de ser páginas propias**: eran casi duplicados exactos de
+    sus secciones del home (mismo copy, mismos componentes) — se fusionó su `PageHeader`/CTA en
+    `ServicesGrid`/`SpecialtiesTabs` del home y se borraron las páginas. El nav superior se dividió
+    en dos grupos (`mainNavAnchors`/`mainNavPages` en `navigation.ts`): **Inicio, Servicios,
+    Soluciones** son anclas al home (`/#top`, `/#servicios`, `/#soluciones`); **Recursos,
+    Tecnología, Nosotros** siguen siendo páginas propias. Un reviewer de Copilot marcó que borrar
+    las páginas sin redirect rompía bookmarks/links indexados — se agregó `redirects` en
+    `astro.config.mjs` (`/servicios` → `/#servicios`, `/soluciones` → `/#soluciones`), que en
+    `output: "static"` genera páginas de meta-refresh, no 301 reales (GitHub Pages no sirve
+    redirects HTTP). Si se borra otra página con URL ya pública, aplicar el mismo patrón.
+17. **`ServiceCard` pasó de link a tarjeta con flip 3D**: clic para girar y mostrar el checklist
+    completo en la cara trasera, en vez de navegar a un ancla de `/servicios#slug` (que ya no
+    existe). El botón expone `aria-expanded` y cada cara alterna `aria-hidden` — antes ambas caras
+    quedaban en el árbol de accesibilidad a la vez, marcado por Copilot. La página `/servicios` (la
+    completa, con `PageHeader`/`ProcessSection`/CTA propio) ya no existe — ver punto 16 — así que
+    `ServiceCard` ya no tiene una variante "estática" separada del flip.
+18. **Acento dorado (`gold-400`)** — ver el bullet de "Sistema de diseño actual" arriba para el
+    detalle completo de dónde vive.
+19. **`TeamCard` — flip 3D con accesibilidad correcta y `roleFull`**: se agregó `roleFull` a
+    `TeamMember` (p. ej. "Chief Executive Officer") mostrado en la cara trasera junto a la sigla
+    (`role`, "CEO") que ya se ve en la foto de portada. Un reviewer de Copilot marcó dos problemas
+    reales: (a) la cara trasera era un `div role="button"` envolviendo `<a>` reales — semántica
+    ARIA anidada inválida — y (b) esa misma cara quedaba tabulable/enfocable con el teclado aunque
+    estuviera visualmente oculta por `backface-visibility` (eso solo oculta visualmente, no saca
+    del tab order ni del árbol de accesibilidad). Se corrigió quitando el `role`/`tabindex` del
+    div, agregando un botón real "Cerrar perfil" (oculto visualmente, aparece al enfocarlo con
+    teclado — patrón `sr-only focus:not-sr-only`), y alternando el atributo `inert` en la cara que
+    no está activa. **Este es el patrón de referencia para cualquier tarjeta con flip 3D nueva** —
+    replicarlo en vez de reinventar la accesibilidad cada vez.
+20. **Falso conflicto de Git en un PR develop→master**: GitHub reportó "conflicting" en un PR donde
+    `git merge`/`git merge-tree` (probado con la base explícita y también cruzando las dos bases)
+    confirmaban un merge limpio. La causa era un **criss-cross merge** — dos merge-bases distintos
+    entre `develop` y `master` porque la misma rama se había fusionado dos veces por caminos
+    distintos (una vez directo a `master`, otra vía `develop`). El algoritmo de mergeability de
+    GitHub no maneja bien la base virtual que sí calcula el `git` local. Solución: fusionar
+    `master` dentro de `develop` localmente (confirmado limpio) y pushear ese merge commit a
+    `develop` — deja una sola base clara y GitHub recalcula el PR como mergeable. Si "GitHub dice
+    conflicto pero `git merge` local no", sospechar de esto antes de resolver manualmente algo que
+    no está roto.
 
 ## Pendientes conocidos antes de un lanzamiento real
 
@@ -190,8 +237,20 @@ Vercel/Netlify/AWS S3+CloudFront documentados paso a paso en `docs/ARCHITECTURE.
 
 - El usuario (Fherney) suele pedir cambios visuales mostrando una captura de pantalla como
   referencia — cuando pase, comparar contra el estado real del sitio, no asumir; usar el dev
-  server o `curl` al HTML compilado para verificar antes de decir que algo está listo.
-- No commitear a git salvo que se pida explícitamente.
+  server o `curl` al HTML compilado para verificar antes de decir que algo está listo. Si la
+  captura no coincide con lo que ya verificaste en el código/dev server, sospechar primero de caché
+  del navegador antes de asumir que el cambio no se aplicó.
+- No commitear a git salvo que se pida explícitamente. Cuando se pida, mensajes en **inglés**, una
+  sola línea, estilo `tipo: descripción corta` (`feat:`/`fix:`), autor único (la cuenta de GitHub
+  del usuario) — sin coautoría de Claude ni cuerpos largos, salvo que el usuario pida lo contrario.
+  Si hay varios cambios de temas distintos sin commitear, agruparlos en commits separados por tema
+  (usar `git diff --cached --stat` para confirmar el alcance antes de cada commit) en vez de uno
+  solo gigante.
+- Cada PR pasa por revisión automática de Copilot — cuando el usuario pida "revisar las sugerencias
+  de Copilot", los hallazgos suelen ser reales (no ruido): en esta sesión los 4 que dio eran todos
+  válidos (bug de `aria-current`, accesibilidad del flip de `ServiceCard`, semántica ARIA anidada +
+  foco fantasma en `TeamCard`, rutas sin redirect). Tratarlos con el mismo rigor que un bug
+  reportado por un humano.
 - Verificar siempre con `npm run build` (incluye `astro check`) después de tocar componentes o
   `global.css` — este proyecto ya tuvo bugs reales de tipos con la librería `motion` (overloads de
   `animate` con "easing" en vez de "ease") y con IDs `Tag`/props de `Button.astro`.

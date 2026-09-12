@@ -57,9 +57,7 @@ fe_sscdx/
 │   │   ├── BaseLayout.astro          # Shell HTML: head, Navbar, Footer, scripts globales
 │   │   └── SimpleContentLayout.astro # Layout ligero para páginas de solo texto (legal, recursos)
 │   ├── pages/                 # Cada archivo = una ruta (file-based routing de Astro)
-│   │   ├── index.astro
-│   │   ├── servicios.astro
-│   │   ├── soluciones.astro
+│   │   ├── index.astro         # Incluye las secciones que antes eran /servicios y /soluciones
 │   │   ├── tecnologia.astro
 │   │   ├── nosotros.astro
 │   │   ├── contacto.astro
@@ -101,7 +99,7 @@ reutilizar con seguridad.
 | Elemento | Convención | Ejemplo |
 |---|---|---|
 | Componentes `.astro` | `PascalCase` | `ServiceCard.astro` |
-| Páginas de ruta | `kebab-case` en español (coincide con la URL) | `soluciones.astro` |
+| Páginas de ruta | `kebab-case` en español (coincide con la URL) | `tecnologia.astro` |
 | Archivos de datos/utils `.ts` | `camelCase` | `seo.ts`, `navigation.ts` |
 | Tipos e interfaces | `PascalCase`, sin prefijo `I` | `Service`, `Project` |
 | Props de componente | `interface Props` local al `.astro` | — |
@@ -214,6 +212,11 @@ Puntos clave de la configuración (ver el archivo real en la raíz del proyecto)
   navegación se sienta instantánea (patrón usado por Vercel/Linear).
 - **`vite.plugins: [tailwindcss()]`** — integra Tailwind v4 directamente en Vite, sin el paquete
   `@astrojs/tailwind` (que es la vía legacy pensada para Tailwind v3).
+- **`redirects`** — `/servicios` y `/soluciones` dejaron de ser páginas propias (su contenido se
+  fusionó en el home, ver [§4](#4-contenido-y-páginas)); en vez de dejarlas devolver 404, redirigen
+  a `/#servicios` y `/#soluciones`. Con `output: "static"` Astro genera esto como una página HTML
+  con `<meta http-equiv="refresh">` en build time (no un 301 real vía servidor) — es la única opción
+  compatible con GitHub Pages, que no sirve redirects HTTP configurables.
 
 ### 2.2 `tsconfig.json`
 
@@ -255,11 +258,20 @@ Definida en `src/styles/global.css` dentro de `@theme`, como dos escalas:
   más claro que un negro puro — un dark mode "gris" se percibe menos técnico/agresivo para
   audiencias no desarrolladoras que un negro casi absoluto. `ink-950` (#1a1b1e) es el fondo base;
   `ink-50` (#f8f8f9) es el texto de mayor énfasis (titulares).
-- **`brand-{300..700}`** (verde esmeralda) — único color de marca: CTAs, enlaces activos, iconos,
-  eyebrows y acentos de datos/código. `brand-500` (#10b981) es el tono principal.
-- **`accent-{300..700}`** (verde azulado / teal) — variación tonal dentro de la misma familia,
-  usada solo para dar profundidad a gradientes y blobs de fondo (nunca como segundo color de marca
-  independiente — la paleta es deliberadamente mono-acento).
+- **`brand-{300..700}`** (verde esmeralda) — color de marca primario: headline destacado del Hero,
+  CTAs primarios, la mayoría de eyebrows/iconos. `brand-500` (#10b981) es el tono principal.
+- **`accent-{300..700}`** (verde azulado / teal) — variación tonal dentro de la familia verde. Ya
+  no se usa en ningún componente salvo como tercer color de `.text-gradient-brand`; el rol de
+  "profundidad en blobs de fondo" que tenía antes lo cubre ahora `gold-400`.
+- **`gold-400`** (`#e3a94a`) — acento secundario aprobado (no de prueba) a partir de una exploración
+  de diseño con dos candidatos de dorado y tres tratamientos por candidato ("reemplazo total",
+  "acento dual", "solo en CTA"); se eligió acento dual. Vive en: índice/icono/viñetas de
+  `ServiceCard`, círculo+línea del timeline de `ProcessSection`, marco de la cara trasera de
+  `TeamCard`, y el blob inferior de fondo (Hero/CTASection/body). El verde no se toca en headline ni
+  CTA primario en ningún lugar — el dorado es estrictamente secundario, nunca reemplaza al verde
+  como color de marca.
+- `ember-400` (`#d38434`, naranja) — acento puntual, solo para el label de rol en `TeamCard`. No es
+  un acento de marca general.
 
 Esta paleta reemplazó una primera iteración cian/violeta: el cliente pidió alinear el sitio con un
 verde esmeralda de referencia, y de paso se aprovechó para quitar el tinte azul del fondo y dejarlo
@@ -267,7 +279,7 @@ en un carbón neutro. Poco después se subió la luminosidad de toda la escala `
 casi negro a un gris oscuro real) porque el negro casi puro se percibía "demasiado técnico" para una
 audiencia de compradores no desarrolladores — ver [§CLAUDE.md](../CLAUDE.md) para el detalle de
 por qué. Sigue el mismo espíritu Vercel/Linear/Stripe: superficies oscuras sin
-calidez, un único acento saturado usado con moderación (nunca como color de fondo grande) y
+calidez, acentos saturados usados con moderación (nunca como color de fondo grande) y
 gradientes sutiles solo en elementos de foco (botón primario, blobs de fondo del Hero).
 
 ### 3.2 Tipografía
@@ -298,10 +310,10 @@ contenido nunca se desalinee entre bloques.
 | `Footer` | `layout/` | Logo + enlaces agrupados, copyright dinámico (`new Date().getFullYear()`) — sin párrafo descriptivo ni íconos sociales. |
 | `Hero` | `sections/` | Titular + descripción + doble CTA + fondos decorativos (grid + blobs con `animate-drift`). |
 | `WhyUs` | `sections/` | "Por qué Siscodex": filas de icono + texto en 2 columnas (sin tarjeta/borde), `title`/`description` opcionales para reutilizar en Home y Nosotros con copy distinto. |
-| `ServiceCard` / `ServicesGrid` | `sections/` | Tarjeta de servicio (índice, icono, descripción, bullets) y la grilla que las agrupa, con `limit` opcional. |
-| `ProcessSection` | `sections/` | Pasos del proceso (`processSteps`) + fila de capacidades de equipo (`processCapabilities`). |
-| `SpecialtiesTabs` | `sections/` | Pestañas de las 5 áreas de especialidad (`src/data/projects.ts`): resumen, capacidades y audiencia (`idealFor`) por área, sin recargar la página. |
-| `TeamSection` / `TeamCard` | `sections/` | Grilla de liderazgo con foto real, nombre y rol (acento `ember-400` en el rol, ver `CLAUDE.md` punto 8). |
+| `ServiceCard` / `ServicesGrid` | `sections/` | Tarjeta de servicio con flip 3D al hacer clic (frente: resumen; reverso: checklist de capacidades) en vez de linkear a una página de detalle — `aria-expanded`/`aria-hidden` sincronizados con el estado, ver `CLAUDE.md` punto 17. |
+| `ProcessSection` | `sections/` | Pasos del proceso (`processSteps`, timeline en acento `gold-400`) + fila de capacidades de equipo (`processCapabilities`). |
+| `SpecialtiesTabs` | `sections/` | Pestañas de las 5 áreas de especialidad (`src/data/projects.ts`): resumen, capacidades y audiencia (`idealFor`) por área, sin recargar la página. Vive únicamente embebida en el home desde que `/soluciones` se eliminó como página propia (`CLAUDE.md` punto 16). |
+| `TeamSection` / `TeamCard` | `sections/` | Grilla de liderazgo con foto real, nombre y rol (acento `ember-400`). Cada tarjeta tiene flip 3D: cara trasera con `roleFull`, resumen y highlights, con `inert` en la cara inactiva y un botón "Cerrar perfil" accesible por teclado — patrón de referencia para cualquier flip nuevo, ver `CLAUDE.md` punto 19. |
 | `TechnologyBadge` | `ui/` | Pill con icono + nombre de tecnología, usado en el stack condensado de Home. |
 | `TechTile` | `ui/` | Tile de tecnología con logo de marca real (`@iconify-json/logos`), usado en el mosaico de `/tecnologia`. |
 | `ContactForm` | `sections/` | Formulario controlado, validación HTML nativa, listo para backend (ver §4.4). |
@@ -342,16 +354,19 @@ defaults de Tailwind, sin sobreescribir): `sm` 40rem, `md` 48rem, `lg` 64rem, `x
 
 | Ruta | Objetivo | Secciones principales |
 |---|---|---|
-| `/` | Conversión: que un decisor técnico/de negocio agende contacto. | Hero, Por qué Siscodex, Servicios (destacados), Proceso, Especialidades (pestañas), Stack, Contacto |
-| `/servicios` | Detalle completo de la oferta. | PageHeader, grilla completa de 6 servicios, Proceso, CTA |
-| `/soluciones` | Especialización respaldada por experiencia real en distintas industrias (no casos de cliente con métricas). | PageHeader, pestañas de las 5 áreas de especialidad con audiencia ideal, CTA |
+| `/` | Conversión: que un decisor técnico/de negocio agende contacto. | Hero, Por qué Siscodex, Servicios (completo, flip cards), Proceso, Soluciones (pestañas), Tecnología (badges + CTA a `/tecnologia`), CTA final |
+| `/servicios`, `/soluciones` | *(eliminadas, ver `CLAUDE.md` punto 16)* Redirigen a `/#servicios` y `/#soluciones` — su contenido vive en `/`. | — |
 | `/tecnologia` | Credibilidad técnica ante equipos de ingeniería del cliente. | PageHeader, mosaico de logos reales agrupado por categoría, CTA |
-| `/nosotros` | Confianza: quién construye el software. | PageHeader, equipo de liderazgo (fotos reales), valores, Por qué Siscodex (misión), cita de cierre, CTA |
-| `/contacto` | Conversión directa. | PageHeader, canales alternativos, formulario completo |
+| `/nosotros` | Confianza: quién construye el software. | PageHeader, equipo de liderazgo (fotos reales, flip cards), valores, Por qué Siscodex (misión), cita de cierre, CTA |
+| `/contacto` | Conversión directa. | PageHeader, formulario completo |
 | `/recursos` | Punto de entrada de documentación para clientes activos. | PageHeader, grilla de recursos, CTA de soporte |
 | `/recursos/*` | Documentación operativa (onboarding, docs de API, SLA, seguridad). | `noindex` — no es contenido de adquisición |
 | `/legal/*` | Privacidad y términos. | — |
 | `/404` | Recuperación de navegación rota. | Mensaje + CTAs de vuelta |
+
+El nav superior (`src/data/navigation.ts`) refleja esta misma división: `mainNavAnchors` (Inicio,
+Servicios, Soluciones) son anclas al home; `mainNavPages` (Recursos, Tecnología, Nosotros) son
+páginas propias con ruta.
 
 ### 4.1 Tono de contenido
 
@@ -411,12 +426,13 @@ Cada página pasa `title`, `description`, `path` (y opcionalmente `image`/`noind
 
 | Página | `<title>` renderizado | Descripción (elevator pitch) |
 |---|---|---|
-| Home | Siscodex | Estudio de ingeniería de software: desarrollo a medida, cloud e IA. |
-| Servicios | Servicios · Siscodex | Detalle de los 6 servicios core. |
-| Soluciones | Soluciones · Siscodex | Especialización respaldada por experiencia real, sin casos de cliente inventados. |
+| Home | Siscodex | Estudio de ingeniería de software: desarrollo a medida, cloud e IA — incluye servicios y soluciones completos. |
 | Tecnología | Tecnología · Siscodex | Stack por categoría. |
 | Nosotros | Nosotros · Siscodex | Propuesta de valor del equipo. |
 | Contacto | Contacto · Siscodex | Invitación a agendar conversación técnica. |
+
+`/servicios` y `/soluciones` ya no son páginas indexables — son redirects `noindex` a anclas del
+home (ver `redirects` en [§2.1](#21-astroconfigmjs)).
 
 Cada `description` en el código ya sigue este patrón (ver el prop `description` de cada
 `BaseLayout` en `src/pages/*.astro`) — no requiere reescritura antes de publicar.
@@ -474,7 +490,17 @@ PNG/JPG de 1200×630 diseñado por el equipo de marca, manteniendo la misma ruta
 - Navegación por teclado: `:focus-visible` con outline visible en todo elemento interactivo
   (definido globalmente en `global.css`, no por componente).
 - `aria-expanded`/`aria-controls` en el toggle del menú móvil; `aria-current="page"` en el enlace
-  de navegación activo.
+  de navegación activo — comparando solo la parte de ruta del `href` (antes del `#`), nunca el
+  `href` completo contra `location.pathname`: un `href` con ancla (`/#servicios`) nunca es igual a
+  un pathname, así que compararlos completos deja el enlace "activo" roto en silencio.
+- **Patrón de flip 3D accesible** (`ServiceCard`, `TeamCard`): el control que gira expone
+  `aria-expanded`; la cara inactiva se marca `aria-hidden` y, si contiene elementos enfocables
+  (links, botones), además `inert` — `backface-visibility: hidden` solo oculta visualmente, no saca
+  nada del tab order ni del árbol de accesibilidad por sí solo. Un contenedor interactivo (`div
+  role="button"`) nunca debe envolver otros elementos interactivos reales (`<a>`, `<button>`) —
+  semántica ARIA anidada inválida; si hace falta un control de cierre por teclado, usar un
+  `<button>` real (puede estar visualmente oculto con `sr-only focus:not-sr-only`). Replicar este
+  patrón en cualquier componente nuevo con dos caras/estados alternables.
 - Formulario con `<label for>` explícito en cada campo, nunca solo `placeholder` como etiqueta.
 - `prefers-reduced-motion` — pendiente de verificación manual antes de lanzamiento: las animaciones
   actuales son sutiles (opacidad/translate ≤16px, blobs decorativos), pero se recomienda envolver
@@ -487,7 +513,7 @@ El brief pide explícitamente evitar "imágenes genéricas de personas trabajand
 imágenes). El sitio sigue sin ese tipo de fotografía en Hero, servicios o especialidades — ahí se
 usan elementos gráficos abstractos (grid pattern, blobs de gradiente, iconografía técnica). La
 única excepción, deliberada, es la sección de equipo en `/nosotros` (`TeamSection`/`TeamCard`),
-que usa las 4 fotos reales de los líderes (`public/team/*.jpeg`) precisamente porque ahí el
+que usa las 3 fotos reales de los líderes vigentes (`public/team/*.jpeg`) precisamente porque ahí el
 objetivo es transparencia ("con quién estás hablando"), no ambientación — es lo opuesto al stock
 genérico que el brief pedía evitar.
 
