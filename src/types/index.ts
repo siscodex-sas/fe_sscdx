@@ -60,8 +60,12 @@ export interface Technology {
 export interface TeamMember {
   name: string;
   role: string;
-  focus: string;
+  headline: string;
+  summary: string;
+  highlights: string[];
   photo: string;
+  linkedin: string;
+  website?: string;
 }
 
 export interface Resource {

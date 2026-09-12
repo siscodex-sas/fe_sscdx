@@ -57,6 +57,7 @@ export default defineConfig({
           "aws-batch",
           "angular-icon",
           "java",
+          "linkedin-icon",
         ],
       },
     }),
