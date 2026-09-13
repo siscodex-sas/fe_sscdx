@@ -6,7 +6,7 @@ import ServicesGrid from "@/components/sections/ServicesGrid.astro";
 import ProcessSection from "@/components/sections/ProcessSection.astro";
 import SpecialtiesTabs from "@/components/sections/SpecialtiesTabs.astro";
 import TechStack from "@/components/sections/TechStack.astro";
-import ContactForm from "@/components/sections/ContactForm.astro";
+import CTASection from "@/components/sections/CTASection.astro";
 ---
 
 <BaseLayout
@@ -20,9 +20,13 @@ import ContactForm from "@/components/sections/ContactForm.astro";
     description="Diseñamos aplicaciones web y móviles escalables sobre infraestructura cloud optimizada, con experiencia técnica senior aplicada directamente a los retos de tu negocio."
   />
   <WhyUs />
-  <ServicesGrid limit={6} />
+  <ServicesGrid />
   <ProcessSection />
   <SpecialtiesTabs />
-  <TechStack />
-  <ContactForm />
+  <TechStack showViewAllLink />
+  <CTASection
+    title="¿Tienes un reto similar?"
+    description="Hablemos sobre cómo aplicar el mismo nivel de ingeniería a tu proyecto."
+    secondaryCta={{ label: "Ver servicios", href: "/#servicios" }}
+  />
 </BaseLayout>

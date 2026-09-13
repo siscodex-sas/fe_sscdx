@@ -17,3 +17,27 @@ import { team } from "@/data/team";
     </div>
   </div>
 </section>
+
+<script>
+  function toggleFlip(trigger: Element) {
+    const card = trigger.closest("[data-team-flip]");
+    if (!card) return;
+
+    const isFlipped = card.getAttribute("data-flipped") === "true";
+    card.setAttribute("data-flipped", String(!isFlipped));
+
+    const frontFace = card.querySelector('[data-team-flip-face="front"]');
+    const backFace = card.querySelector('[data-team-flip-face="back"]');
+    frontFace?.setAttribute("aria-expanded", String(!isFlipped));
+    frontFace?.toggleAttribute("inert", !isFlipped);
+    backFace?.toggleAttribute("inert", isFlipped);
+  }
+
+  document.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element) || target.closest("a")) return;
+
+    const trigger = target.closest("[data-team-flip-toggle]");
+    if (trigger) toggleFlip(trigger);
+  });
+</script>

@@ -1,6 +1,6 @@
 ---
 import { Icon } from "astro-icon/components";
-import { mainNav } from "@/data/navigation";
+import { mainNavAnchors, mainNavPages } from "@/data/navigation";
 import Button from "@/components/ui/Button.astro";
 import { withBase } from "@/utils/url";
 
@@ -19,7 +19,28 @@ const currentPath = new URL(Astro.request.url).pathname;
 
     <div class="hidden items-center gap-8 md:flex">
       {
-        mainNav.map((link) => (
+        mainNavAnchors.map((link) => {
+          const anchorPath = withBase(link.href.split("#")[0] || "/");
+          const isActive = currentPath === anchorPath;
+          return (
+            <a
+              href={withBase(link.href)}
+              aria-current={isActive ? "page" : undefined}
+              class:list={[
+                "text-sm font-medium text-ink-300 transition-colors duration-200 hover:text-brand-300",
+                isActive && "text-brand-300",
+              ]}
+            >
+              {link.label}
+            </a>
+          );
+        })
+      }
+
+      <span class="text-ink-700" aria-hidden="true">|</span>
+
+      {
+        mainNavPages.map((link) => (
           <a
             href={withBase(link.href)}
             aria-current={currentPath === withBase(link.href) ? "page" : undefined}
@@ -53,7 +74,20 @@ const currentPath = new URL(Astro.request.url).pathname;
   <div id="mobile-menu" class="hidden border-t border-ink-700 bg-ink-950/98 backdrop-blur-xl md:hidden">
     <div class="flex flex-col gap-1 px-4 py-4">
       {
-        mainNav.map((link) => (
+        mainNavAnchors.map((link) => (
+          <a
+            href={withBase(link.href)}
+            class="rounded-md px-3 py-3 text-base font-medium text-ink-200 hover:bg-ink-800 hover:text-brand-300"
+          >
+            {link.label}
+          </a>
+        ))
+      }
+
+      <hr class="my-1 border-ink-700" />
+
+      {
+        mainNavPages.map((link) => (
           <a
             href={withBase(link.href)}
             class="rounded-md px-3 py-3 text-base font-medium text-ink-200 hover:bg-ink-800 hover:text-brand-300"

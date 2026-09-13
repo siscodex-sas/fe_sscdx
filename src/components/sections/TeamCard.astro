@@ -1,4 +1,5 @@
 ---
+import { Icon } from "astro-icon/components";
 import { withBase } from "@/utils/url";
 import type { TeamMember } from "@/types";
 
@@ -9,20 +10,102 @@ interface Props {
 const { member } = Astro.props;
 ---
 
-<article
-  class="group relative aspect-[4/5] overflow-hidden rounded-lg border border-ink-700/80 transition-all duration-300 hover:-translate-y-1 hover:border-brand-400/40"
-  data-reveal
->
-  <img
-    src={withBase(member.photo)}
-    alt={`${member.name} — ${member.role}`}
-    width="440"
-    height="550"
-    class="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-[1.03]"
-  />
-  <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink-950 via-ink-950/15 to-transparent"></div>
-  <div class="absolute inset-x-0 bottom-0 p-5">
-    <span class="font-mono text-xs uppercase tracking-[0.15em] text-ember-400">{member.role}</span>
-    <h3 class="mt-1 text-lg font-semibold text-white">{member.name}</h3>
+<article class="team-flip-card relative aspect-[4/5]" data-team-flip data-reveal>
+  <div class="team-flip-inner relative h-full w-full transition-transform duration-500 ease-out">
+    <button
+      type="button"
+      data-team-flip-face="front"
+      class="team-flip-face absolute inset-0 cursor-pointer overflow-hidden rounded-lg border border-ink-700/80 text-left transition-colors duration-300 hover:border-gold-400/40"
+      data-team-flip-toggle
+      aria-expanded="false"
+      aria-label={`Ver la trayectoria de ${member.name}`}
+    >
+      <img
+        src={withBase(member.photo)}
+        alt={`${member.name} — ${member.role}`}
+        width="440"
+        height="550"
+        class="absolute inset-0 h-full w-full object-cover object-top"
+      />
+      <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink-950 via-ink-950/15 to-transparent"></div>
+      <div class="absolute inset-x-0 bottom-0 p-5">
+        <span class="font-mono text-xs uppercase tracking-[0.15em] text-ember-400">{member.role}</span>
+        <h3 class="mt-1 text-lg font-semibold text-white">{member.name}</h3>
+      </div>
+    </button>
+
+    <div
+      data-team-flip-face="back"
+      inert
+      class="team-flip-face team-flip-back absolute inset-0 flex cursor-pointer flex-col rounded-lg border border-gold-400/40 bg-ink-900 p-6"
+      data-team-flip-toggle
+    >
+      <button
+        type="button"
+        data-team-flip-toggle
+        class="sr-only focus:not-sr-only focus:absolute focus:right-4 focus:top-4 focus:z-10 focus:size-8 focus:rounded-full focus:bg-gold-400/10 focus:text-gold-400"
+      >
+        {`Cerrar perfil de ${member.name}`}
+      </button>
+
+      <span class="font-mono text-xs uppercase tracking-[0.15em] text-ember-400">{member.roleFull}</span>
+      <h3 class="mt-1 text-lg font-semibold text-white">{member.name}</h3>
+      <p class="mt-1 text-xs font-medium text-brand-400">{member.headline}</p>
+      <p class="mt-3 text-xs leading-relaxed text-ink-300">{member.summary}</p>
+
+      <ul class="mt-3 space-y-1.5 overflow-y-auto">
+        {
+          member.highlights.map((highlight) => (
+            <li class="flex gap-1.5 text-xs leading-relaxed text-ink-200">
+              <span class="mt-1.5 size-1 shrink-0 rounded-full bg-brand-400" />
+              <span>{highlight}</span>
+            </li>
+          ))
+        }
+      </ul>
+
+      <div class="mt-auto flex gap-2 pt-4">
+        {
+          member.website && (
+            <a
+              href={member.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Sitio web de ${member.name}`}
+              class="flex size-9 items-center justify-center rounded-md bg-white/5 text-white transition-transform hover:scale-110 hover:text-brand-400"
+            >
+              <Icon name="lucide:globe" class="size-4" />
+            </a>
+          )
+        }
+        <a
+          href={member.linkedin}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`Perfil de LinkedIn de ${member.name}`}
+          class="flex size-9 items-center justify-center rounded-md bg-white/5 text-white transition-transform hover:scale-110 hover:text-brand-400"
+        >
+          <Icon name="lucide:linkedin" class="size-4" />
+        </a>
+      </div>
+    </div>
   </div>
 </article>
+
+<style>
+  .team-flip-card {
+    perspective: 1400px;
+  }
+  .team-flip-inner {
+    transform-style: preserve-3d;
+  }
+  .team-flip-face {
+    backface-visibility: hidden;
+  }
+  .team-flip-back {
+    transform: rotateY(180deg);
+  }
+  .team-flip-card[data-flipped="true"] .team-flip-inner {
+    transform: rotateY(180deg);
+  }
+</style>
