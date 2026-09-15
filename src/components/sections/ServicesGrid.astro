@@ -1,15 +1,21 @@
 ---
 import ServiceCard from "@/components/sections/ServiceCard.astro";
 import SectionTitle from "@/components/ui/SectionTitle.astro";
-import { services } from "@/data/services";
+import { getServices } from "@/data/services";
+import { useTranslations } from "@/i18n/utils";
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/types";
+
+const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;
+const t = useTranslations(locale);
+const services = getServices(locale);
 ---
 
 <section class="py-24" id="servicios">
   <div class="mx-auto max-w-(--container-page) px-4 sm:px-6 lg:px-8">
     <SectionTitle
-      eyebrow="Servicios"
-      title="Soluciones de ingeniería para cada etapa de tu producto"
-      description="Desde el primer prototipo hasta la operación a escala, cubrimos todo el ciclo de vida del software empresarial."
+      eyebrow={t("services.eyebrow")}
+      title={t("services.title")}
+      description={t("services.description")}
     />
 
     <div class="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">

@@ -1,8 +1,22 @@
 ---
 import { Icon } from "astro-icon/components";
-import { mainNavAnchors, mainNavPages } from "@/data/navigation";
+import { getMainNavAnchors, getMainNavPages } from "@/data/navigation";
 import Button from "@/components/ui/Button.astro";
+import LanguageSwitcher from "@/components/ui/LanguageSwitcher.astro";
 import { withBase } from "@/utils/url";
+import { localizedHref, useTranslations } from "@/i18n/utils";
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/types";
+
+interface Props {
+  /** Ruta canónica de la página actual (prop `path` de `BaseLayout`), para el selector de idioma. */
+  pagePath: string;
+}
+
+const { pagePath } = Astro.props;
+const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;
+const t = useTranslations(locale);
+const mainNavAnchors = getMainNavAnchors(locale);
+const mainNavPages = getMainNavPages(locale);
 
 const currentPath = new URL(Astro.request.url).pathname;
 ---
@@ -13,18 +27,18 @@ const currentPath = new URL(Astro.request.url).pathname;
   data-navbar
 >
   <nav class="mx-auto flex h-18 max-w-(--container-page) items-center justify-between overflow-hidden px-4 sm:px-6 lg:px-8">
-    <a href={withBase("/")} class="flex shrink-0 items-center">
+    <a href={withBase(localizedHref("/", locale))} class="flex shrink-0 items-center">
       <img src={withBase("/logo.png")} alt="Siscodex" width="182" height="20" class="h-5 w-auto sm:h-6" />
     </a>
 
     <div class="hidden items-center gap-8 md:flex">
       {
         mainNavAnchors.map((link) => {
-          const anchorPath = withBase(link.href.split("#")[0] || "/");
+          const anchorPath = withBase(localizedHref(link.href.split("#")[0] || "/", locale));
           const isActive = currentPath === anchorPath;
           return (
             <a
-              href={withBase(link.href)}
+              href={withBase(localizedHref(link.href, locale))}
               aria-current={isActive ? "page" : undefined}
               class:list={[
                 "text-sm font-medium text-ink-300 transition-colors duration-200 hover:text-brand-300",
@@ -40,26 +54,30 @@ const currentPath = new URL(Astro.request.url).pathname;
       <span class="text-ink-700" aria-hidden="true">|</span>
 
       {
-        mainNavPages.map((link) => (
-          <a
-            href={withBase(link.href)}
-            aria-current={currentPath === withBase(link.href) ? "page" : undefined}
-            class:list={[
-              "text-sm font-medium text-ink-300 transition-colors duration-200 hover:text-brand-300",
-              currentPath === withBase(link.href) && "text-brand-300",
-            ]}
-          >
-            {link.label}
-          </a>
-        ))
+        mainNavPages.map((link) => {
+          const linkHref = withBase(localizedHref(link.href, locale));
+          return (
+            <a
+              href={linkHref}
+              aria-current={currentPath === linkHref ? "page" : undefined}
+              class:list={[
+                "text-sm font-medium text-ink-300 transition-colors duration-200 hover:text-brand-300",
+                currentPath === linkHref && "text-brand-300",
+              ]}
+            >
+              {link.label}
+            </a>
+          );
+        })
       }
     </div>
 
     <div class="flex items-center gap-3">
-      <Button href="/contacto" size="md" class="hidden md:inline-flex">Hablemos</Button>
+      <LanguageSwitcher pagePath={pagePath} class="hidden md:inline-flex" />
+      <Button href="/contacto" size="md" class="hidden md:inline-flex">{t("nav.cta")}</Button>
       <button
         type="button"
-        aria-label="Abrir menú de navegación"
+        aria-label={t("nav.aria.menu")}
         aria-expanded="false"
         aria-controls="mobile-menu"
         data-menu-toggle
@@ -76,7 +94,7 @@ const currentPath = new URL(Astro.request.url).pathname;
       {
         mainNavAnchors.map((link) => (
           <a
-            href={withBase(link.href)}
+            href={withBase(localizedHref(link.href, locale))}
             class="rounded-md px-3 py-3 text-base font-medium text-ink-200 hover:bg-ink-800 hover:text-brand-300"
           >
             {link.label}
@@ -89,14 +107,17 @@ const currentPath = new URL(Astro.request.url).pathname;
       {
         mainNavPages.map((link) => (
           <a
-            href={withBase(link.href)}
+            href={withBase(localizedHref(link.href, locale))}
             class="rounded-md px-3 py-3 text-base font-medium text-ink-200 hover:bg-ink-800 hover:text-brand-300"
           >
             {link.label}
           </a>
         ))
       }
-      <Button href="/contacto" size="md" class="mt-2 justify-center">Hablemos</Button>
+      <div class="mt-2 flex items-center gap-3">
+        <LanguageSwitcher pagePath={pagePath} />
+        <Button href="/contacto" size="md" class="flex-1 justify-center">{t("nav.cta")}</Button>
+      </div>
     </div>
   </div>
 </header>

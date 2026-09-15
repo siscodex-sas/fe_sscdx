@@ -1,0 +1,32 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Hero from "@/components/sections/Hero.astro";
+import WhyUs from "@/components/sections/WhyUs.astro";
+import ServicesGrid from "@/components/sections/ServicesGrid.astro";
+import ProcessSection from "@/components/sections/ProcessSection.astro";
+import SpecialtiesTabs from "@/components/sections/SpecialtiesTabs.astro";
+import TechStack from "@/components/sections/TechStack.astro";
+import CTASection from "@/components/sections/CTASection.astro";
+---
+
+<BaseLayout
+  title="Siscodex"
+  description="Software engineering studio specialized in custom development, cloud architecture and artificial intelligence for companies looking to grow without technical limits."
+  path="/en"
+>
+  <Hero
+    title="Solid software engineering for companies looking to"
+    highlight="grow without limits."
+    description="We design scalable web and mobile applications on optimized cloud infrastructure, with senior technical expertise applied directly to your business challenges."
+  />
+  <WhyUs />
+  <ServicesGrid />
+  <ProcessSection />
+  <SpecialtiesTabs />
+  <TechStack showViewAllLink />
+  <CTASection
+    title="Have a similar challenge?"
+    description="Let's talk about how to apply the same level of engineering to your project."
+    secondaryCta={{ label: "See services", href: "/#servicios" }}
+  />
+</BaseLayout>

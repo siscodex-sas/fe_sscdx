@@ -4,7 +4,8 @@ Sitio web corporativo oficial de **Siscodex** — estudio de ingeniería de soft
 especializado en desarrollo a medida, arquitectura cloud e inteligencia artificial.
 
 Construido con [Astro](https://astro.build) + TypeScript estricto + Tailwind CSS v4, 100%
-estático y listo para desplegarse en GitHub Pages, Vercel, Netlify o AWS S3/CloudFront.
+estático y listo para desplegarse en GitHub Pages, Vercel, Netlify o AWS S3/CloudFront. Bilingüe
+(español por defecto, inglés bajo `/en/`) vía el routing i18n nativo de Astro.
 
 📄 **Documentación técnica completa** (arquitectura, sistema de diseño, SEO, performance y
 deployment): [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
@@ -35,9 +36,10 @@ npm run dev       # http://localhost:4321
 ```
 src/
 ├── components/   # ui/ (átomos) · sections/ (bloques de página) · layout/ (Navbar, Footer) · seo/
-├── data/         # Contenido tipado: servicios, proyectos, tecnologías, navegación
+├── data/         # Contenido tipado: servicios, proyectos, tecnologías, navegación (getX(locale))
+├── i18n/         # Diccionario ES/EN, t(), localizedHref(), alternateUrls()
 ├── layouts/      # BaseLayout y SimpleContentLayout
-├── pages/        # Rutas del sitio (file-based routing)
+├── pages/        # Rutas del sitio (file-based routing) — en/ espeja cada página en inglés
 ├── scripts/      # JS de cliente compartido (scroll-reveal)
 ├── styles/       # Theme de Tailwind v4 (global.css)
 ├── types/        # Contratos de datos

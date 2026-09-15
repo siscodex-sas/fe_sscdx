@@ -1,23 +1,26 @@
 ---
 import { Icon } from "astro-icon/components";
 import SectionTitle from "@/components/ui/SectionTitle.astro";
-import { advantages } from "@/data/services";
+import { getAdvantages } from "@/data/services";
+import { useTranslations } from "@/i18n/utils";
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/types";
 
 interface Props {
   title?: string;
   description?: string;
 }
 
-const {
-  title = "Ventaja competitiva construida en cada entrega",
-  description = "Combinamos visión estratégica con ejecución técnica senior para entregar software que impulsa tu negocio.",
-} = Astro.props;
+const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;
+const t = useTranslations(locale);
+const advantages = getAdvantages(locale);
+
+const { title = t("whyus.title"), description = t("whyus.description") } = Astro.props;
 ---
 
 <section class="border-y border-ink-700 bg-ink-900/60 py-24">
   <div class="mx-auto max-w-(--container-page) px-4 sm:px-6 lg:px-8">
     <div class="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:items-start">
-      <SectionTitle eyebrow="Por qué Siscodex" title={title} description={description} />
+      <SectionTitle eyebrow={t("whyus.eyebrow")} title={title} description={description} />
 
       <div class="grid grid-cols-1 gap-x-8 gap-y-8 sm:grid-cols-2 lg:mt-20">
         {

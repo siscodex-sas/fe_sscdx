@@ -1,18 +1,22 @@
 ---
 import { Icon } from "astro-icon/components";
 import type { Service } from "@/types";
+import { useTranslations } from "@/i18n/utils";
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/types";
 
 interface Props {
   service: Service;
 }
 
 const { service } = Astro.props;
+const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;
+const t = useTranslations(locale);
 ---
 
 <div class="group h-full min-h-72 [perspective:1200px]" data-service-card>
   <button
     type="button"
-    aria-label={`Ver detalle de ${service.title}`}
+    aria-label={`${t("services.card.viewDetail")} ${service.title}`}
     aria-expanded="false"
     class="grid h-full w-full cursor-pointer text-left transition-transform duration-500 [transform-style:preserve-3d] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-400"
     data-service-card-inner

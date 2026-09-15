@@ -1,0 +1,78 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageHeader from "@/components/sections/PageHeader.astro";
+import TeamSection from "@/components/sections/TeamSection.astro";
+import WhyUs from "@/components/sections/WhyUs.astro";
+import CTASection from "@/components/sections/CTASection.astro";
+import { Icon } from "astro-icon/components";
+
+const values = [
+  {
+    icon: "target",
+    title: "Results-driven",
+    description: "Every technical decision is evaluated by its impact on the client's business, not by technology trends.",
+  },
+  {
+    icon: "eye",
+    title: "Technical transparency",
+    description: "We report real progress, including risks and blockers, instead of empty status updates.",
+  },
+  {
+    icon: "graduation-cap",
+    title: "Continuous improvement",
+    description: "Code reviews, retrospectives, and constant updates to our engineering practices.",
+  },
+];
+---
+
+<BaseLayout
+  title="About us"
+  description="Meet the engineering team behind Siscodex: our mission, values, and how we work with businesses."
+  path="/en/nosotros"
+>
+  <PageHeader
+    eyebrow="About us"
+    title="The team behind every project"
+    description="The people making the technical and business decisions, with no middle layers — backed by a full team behind every project."
+  />
+
+  <TeamSection />
+
+  <section class="py-16">
+    <div class="mx-auto max-w-(--container-page) px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 gap-5 sm:grid-cols-3">
+        {
+          values.map((value) => (
+            <div class="rounded-lg border border-ink-700 bg-ink-800/30 p-6" data-reveal>
+              <div class="mb-4 flex size-11 items-center justify-center rounded-lg bg-brand-400/10 text-brand-300">
+                <Icon name={`lucide:${value.icon}`} class="size-5" />
+              </div>
+              <h3 class="text-base font-semibold text-ink-50">{value.title}</h3>
+              <p class="mt-2 text-sm text-ink-300">{value.description}</p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <WhyUs
+    title="Engineering with strategic vision"
+    description="Siscodex helps organizations grow and evolve without technical limits, leading the design and development of solid, scalable software and cloud infrastructure solutions built for constantly evolving businesses. It combines high-level engineering, modern architecture and strategic vision to turn complex challenges into efficient, sustainable, high-impact solutions — a technology partner that accompanies every client from their current challenges to their next stage of growth."
+  />
+
+  <section class="py-16">
+    <div class="mx-auto max-w-2xl px-4 text-center sm:px-6 lg:px-8">
+      <span class="font-mono text-3xl text-brand-400/70 sm:text-4xl">“</span>
+      <p class="mt-2 text-xl leading-relaxed font-normal text-ink-200 italic sm:text-2xl">
+        The true value of technology isn't in defining how far a company can go, but in making
+        possible everything it hasn't yet imagined.
+      </p>
+    </div>
+  </section>
+
+  <CTASection
+    title="Ready to talk about your project?"
+    description="Book a free initial call, directly with the leadership team."
+  />
+</BaseLayout>
