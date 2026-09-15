@@ -1,0 +1,35 @@
+---
+import SimpleContentLayout from "@/layouts/SimpleContentLayout.astro";
+import { withBase } from "@/utils/url";
+import { localizedHref } from "@/i18n/utils";
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/types";
+
+const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;
+---
+
+<SimpleContentLayout
+  eyebrow="Resources · Documentation"
+  title="API documentation and deliverables"
+  intro="Access to technical documentation for active projects, for client teams."
+  description="How to access the technical documentation and deliverables for your project with Siscodex."
+  path="/en/recursos/documentacion"
+  noindex
+>
+  <h2>Access to technical documentation</h2>
+  <p>
+    Every active project has a private documentation space (Confluence, Notion, or a Git
+    repository, depending on what's agreed with the client) where technical specifications,
+    architecture diagrams and changelogs are published.
+  </p>
+
+  <h2>API documentation</h2>
+  <p>
+    For projects that expose APIs, we generate interactive documentation (OpenAPI/Swagger)
+    versioned alongside the code, available in the corresponding staging environment.
+  </p>
+
+  <p>
+    If you're a current client and don't have access to your documentation space, <a href={withBase(localizedHref("/contacto", locale))}>contact us</a> and we'll
+    enable it within 24 hours.
+  </p>
+</SimpleContentLayout>

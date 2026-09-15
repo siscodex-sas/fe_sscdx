@@ -1,0 +1,60 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageHeader from "@/components/sections/PageHeader.astro";
+import CTASection from "@/components/sections/CTASection.astro";
+import { Icon } from "astro-icon/components";
+import { getResources } from "@/data/technologies";
+import { withBase } from "@/utils/url";
+import { localizedHref } from "@/i18n/utils";
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/types";
+
+const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;
+const resources = getResources(locale);
+---
+
+<BaseLayout
+  title="Resources"
+  description="Documentation, onboarding guides and support resources for current Siscodex clients."
+  path="/en/recursos"
+  noindex
+>
+  <PageHeader
+    eyebrow="Resources"
+    title="Documentation for current clients"
+    description="Everything your team needs to work with us: process guides, technical documentation and support channels."
+  />
+
+  <section class="py-16">
+    <div class="mx-auto max-w-(--container-page) px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        {
+          resources.map((resource) => (
+            <a
+              href={withBase(localizedHref(resource.href, locale))}
+              class="group flex flex-col rounded-lg border border-ink-700 bg-ink-800/30 p-6 transition-colors duration-300 hover:border-brand-400/40"
+            >
+              <div class="flex items-center justify-between">
+                <span class="flex size-11 items-center justify-center rounded-lg bg-ink-700/60 text-brand-400">
+                  <Icon name={`lucide:${resource.icon}`} class="size-5" />
+                </span>
+                <span class="font-mono text-[11px] uppercase tracking-wider text-ink-400">{resource.tag}</span>
+              </div>
+              <h3 class="mt-5 text-lg font-semibold text-ink-50">{resource.title}</h3>
+              <p class="mt-2 text-sm text-ink-300">{resource.description}</p>
+              <span class="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-brand-300 transition-transform group-hover:translate-x-1">
+                Learn more
+                <Icon name="lucide:arrow-right" class="size-4" />
+              </span>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <CTASection
+    title="Are you a client and can't find what you're looking for?"
+    description="Write to us directly and we'll point you to the right resource or person."
+    primaryCta={{ label: "Contact support", href: "/contacto" }}
+  />
+</BaseLayout>

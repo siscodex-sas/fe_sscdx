@@ -1,0 +1,63 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageHeader from "@/components/sections/PageHeader.astro";
+import CTASection from "@/components/sections/CTASection.astro";
+import TechTile from "@/components/ui/TechTile.astro";
+import { technologies } from "@/data/technologies";
+import type { TechCategory } from "@/types";
+
+const categoryLabels: Record<TechCategory, string> = {
+  frontend: "Frontend",
+  backend: "Backend",
+  cloud: "Cloud & Infrastructure",
+  mobile: "Mobile apps",
+  "3d": "3D Development",
+  devops: "DevOps",
+};
+
+const categories = Object.keys(categoryLabels) as TechCategory[];
+---
+
+<BaseLayout
+  title="Technology"
+  description="The technology stack we use at Siscodex: frontend, backend, cloud, data, artificial intelligence and enterprise-grade DevOps."
+  path="/en/tecnologia"
+>
+  <PageHeader
+    eyebrow="Tech stack"
+    title="Technical decisions made with judgment"
+    description="We choose technologies with an eye beyond the present: stability, scalability, maintainability, and room to evolve."
+  />
+
+  <section class="py-16">
+    <div class="mx-auto max-w-(--container-page) px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        {
+          categories.map((category) => {
+            const items = technologies.filter((tech) => tech.category === category);
+            return (
+              <div class="rounded-xl border border-ink-700 bg-ink-800/30 p-6" data-reveal>
+                <div class="mb-5 flex items-baseline justify-between">
+                  <h3 class="font-display text-lg font-semibold text-ink-50">{categoryLabels[category]}</h3>
+                  <span class="font-mono text-xs text-ink-400">
+                    {items.length} {items.length === 1 ? "technology" : "technologies"}
+                  </span>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                  {items.map((tech) => (
+                    <TechTile name={tech.name} icon={tech.icon} />
+                  ))}
+                </div>
+              </div>
+            );
+          })
+        }
+      </div>
+    </div>
+  </section>
+
+  <CTASection
+    title="Does your team already use a different stack?"
+    description="We adapt to your existing infrastructure when the project calls for it."
+  />
+</BaseLayout>
