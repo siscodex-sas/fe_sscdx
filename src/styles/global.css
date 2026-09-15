@@ -54,6 +54,9 @@
   /* ---------- Gold: acento dorado secundario, aprobado en la exploración "acento dual" (verde sigue siendo el color primario) ---------- */
   --color-gold-400: #e3a94a;
 
+  /* ---------- Danger: color semántico de error de formulario, separado de los acentos de marca ---------- */
+  --color-danger-400: #f2555f;
+
   /* ---------- Radios y contenedor ---------- */
   --radius-sm: 0.375rem;
   --radius-md: 0.625rem;
