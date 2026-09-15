@@ -20,6 +20,7 @@ de cada decisión, no solo el "qué".
 6. [Performance y optimización](#6-performance-y-optimización)
 7. [Deployment](#7-deployment)
 8. [Buenas prácticas](#8-buenas-prácticas)
+9. [Internacionalización (i18n)](#9-internacionalización-i18n)
 
 ---
 
@@ -48,11 +49,15 @@ fe_sscdx/
 │   │   ├── seo/               # <SEO /> — metadata, OG, Schema.org
 │   │   └── ui/                # Átomos reutilizables (Button, SectionTitle, TechTile, Badge...)
 │   ├── data/                  # Contenido estructurado como TypeScript (no CMS todavía)
-│   │   ├── navigation.ts
-│   │   ├── services.ts
-│   │   ├── projects.ts
-│   │   ├── technologies.ts
-│   │   └── team.ts
+│   │   ├── navigation.ts       # getMainNavAnchors/getMainNavPages/getFooterLinks(locale)
+│   │   ├── services.ts         # getServices/getAdvantages/getProcessSteps/getProcessCapabilities(locale)
+│   │   ├── projects.ts         # getProjects(locale)
+│   │   ├── technologies.ts     # technologies (sin traducir) + getResources(locale)
+│   │   └── team.ts             # getTeam(locale)
+│   ├── i18n/                   # Ver §9 — diccionario ES/EN, t(), localizedHref(), alternateUrls()
+│   │   ├── types.ts
+│   │   ├── ui.ts
+│   │   └── utils.ts
 │   ├── layouts/
 │   │   ├── BaseLayout.astro          # Shell HTML: head, Navbar, Footer, scripts globales
 │   │   └── SimpleContentLayout.astro # Layout ligero para páginas de solo texto (legal, recursos)
@@ -64,7 +69,8 @@ fe_sscdx/
 │   │   ├── recursos.astro
 │   │   ├── recursos/          # Subpáginas de documentación para clientes (noindex)
 │   │   ├── legal/              # Privacidad y términos
-│   │   └── 404.astro
+│   │   ├── en/                 # Espejo en inglés de cada página de arriba, mismos slugs (ver §9)
+│   │   └── 404.astro           # Sin versión /en/ — GitHub Pages sirve un solo 404.html, ver §9
 │   ├── scripts/                # JS de cliente compartido (no components)
 │   │   └── reveal.ts           # Scroll-reveal con la librería "motion"
 │   ├── styles/
@@ -72,7 +78,8 @@ fe_sscdx/
 │   ├── types/
 │   │   └── index.ts            # Contratos de datos (Service, Project, Technology...)
 │   └── utils/
-│       └── seo.ts              # Helpers de título/canonical/OG
+│       ├── seo.ts              # Helpers de título/canonical/OG
+│       └── url.ts              # withBase() — compone con localizedHref() de src/i18n/utils.ts
 ├── astro.config.mjs
 ├── tsconfig.json
 ├── package.json
@@ -316,6 +323,7 @@ contenido nunca se desalinee entre bloques.
 | `TeamSection` / `TeamCard` | `sections/` | Grilla de liderazgo con foto real, nombre y rol (acento `ember-400`). Cada tarjeta tiene flip 3D: cara trasera con `roleFull`, resumen y highlights, con `inert` en la cara inactiva y un botón "Cerrar perfil" accesible por teclado — patrón de referencia para cualquier flip nuevo, ver `CLAUDE.md` punto 19. |
 | `TechnologyBadge` | `ui/` | Pill con icono + nombre de tecnología, usado en el stack condensado de Home. |
 | `TechTile` | `ui/` | Tile de tecnología con logo de marca real (`@iconify-json/logos`), usado en el mosaico de `/tecnologia`. |
+| `LanguageSwitcher` | `ui/` | Pastilla "EN"/"ES" en el Navbar — `<a href>` simple (sin JS) al equivalente de la página actual en el otro idioma, ver §9. |
 | `ContactForm` | `sections/` | Formulario controlado, validación HTML nativa, listo para backend (ver §4.4). |
 | `SectionTitle` | `ui/` | Encabezado de sección (`eyebrow` + `title` + `description`), alineación izquierda o centrada. |
 | `Button` | `ui/` | Renderiza `<a>` o `<button>` según reciba `href`; variantes `primary`/`secondary`/`ghost`; envuelve `href` en `withBase()`. |
@@ -368,6 +376,10 @@ El nav superior (`src/data/navigation.ts`) refleja esta misma división: `mainNa
 Servicios, Soluciones) son anclas al home; `mainNavPages` (Recursos, Tecnología, Nosotros) son
 páginas propias con ruta.
 
+Cada una de estas rutas existe también en inglés bajo `/en/` con el mismo slug (`/en/nosotros`,
+`/en/contacto`...) — ver [§9](#9-internacionalización-i18n). Excepción: `/404` no tiene par en
+`/en/` (GitHub Pages sirve un único `404.html`, sin importar el idioma de la URL rota).
+
 ### 4.1 Tono de contenido
 
 Los textos usan lenguaje directo orientado a quien **contrata** desarrollo (no a quien busca
@@ -416,11 +428,15 @@ Cada página pasa `title`, `description`, `path` (y opcionalmente `image`/`noind
 - `<title>` con sufijo de marca consistente (`pageTitle()` en `utils/seo.ts`).
 - `meta description` único por página.
 - `<link rel="canonical">` absoluto, calculado con `canonicalUrl()`.
-- Open Graph completo (`og:title`, `og:description`, `og:image`, `og:url`, `og:locale`).
+- Open Graph completo (`og:title`, `og:description`, `og:image`, `og:url`, `og:locale` — dinámico,
+  `es_ES`/`en_US` según `Astro.currentLocale`).
 - Twitter Card (`summary_large_image`).
-- JSON-LD de `Organization` (nombre, URL, logo, punto de contacto) en **todas** las páginas —
-  refuerza la entidad "Siscodex" ante buscadores independientemente de en qué página aterrice el
-  crawler.
+- JSON-LD de `Organization` (nombre, URL, logo, punto de contacto, descripción traducida vía
+  `src/i18n/ui.ts`) en **todas** las páginas — refuerza la entidad "Siscodex" ante buscadores
+  independientemente de en qué página aterrice el crawler.
+- `<link rel="alternate" hreflang="es|en|x-default">` — apunta a la versión equivalente de la
+  página actual en el otro idioma, calculado con `alternateUrls()` de `src/i18n/utils.ts`. Ver
+  [§9](#9-internacionalización-i18n).
 
 ### 5.2 Recomendaciones de título/descripción por página
 
@@ -440,9 +456,13 @@ Cada `description` en el código ya sigue este patrón (ver el prop `description
 ### 5.3 Sitemap y robots.txt
 
 `@astrojs/sitemap` genera `sitemap-index.xml` automáticamente en cada build a partir de las
-páginas reales — no se mantiene a mano y nunca queda desincronizado. `public/robots.txt` permite
-todo el rastreo salvo `/recursos/*` (subpáginas de documentación operativa, marcadas también
-`noindex` en su `<meta>` por defensa en profundidad) y referencia el sitemap explícitamente.
+páginas reales — no se mantiene a mano y nunca queda desincronizado. Con las páginas `/en/*`
+duplicadas físicamente en `src/pages/`, el sitemap ya incluye las 22 URLs (11 rutas × 2 idiomas)
+sin configuración adicional — no genera anotaciones `xhtml:link` de idiomas alternos dentro del
+propio sitemap (eso sí lo hace `SEO.astro` en el `<head>` de cada página, ver §5.1/§9), que es
+suficiente para que Google/Bing indexen ambas versiones. `public/robots.txt` permite todo el
+rastreo salvo `/recursos/*` (subpáginas de documentación operativa, marcadas también `noindex` en
+su `<meta>` por defensa en profundidad, en ambos idiomas) y referencia el sitemap explícitamente.
 
 ### 5.4 Pendiente antes de lanzamiento
 
@@ -614,9 +634,125 @@ compleja), la estructura recomendada es:
 ### 8.4 Mantenibilidad y escalabilidad
 
 - Añadir una página nueva no requiere tocar `BaseLayout` ni `Navbar` salvo que deba aparecer en la
-  navegación (en cuyo caso, un único cambio en `src/data/navigation.ts`).
-- Añadir un servicio/proyecto/tecnología nuevo es una entrada más en el array correspondiente de
-  `src/data/` — cero cambios de componente si respeta la interfaz de `src/types/index.ts`.
+  navegación (en cuyo caso, un único cambio en `src/data/navigation.ts`) — **y** requiere su espejo
+  en `src/pages/en/` con el mismo slug (ver §9), o el selector de idioma llevará a un 404 en inglés.
+- Añadir un servicio/proyecto/tecnología nuevo es una entrada más en la estructura `*Source`
+  correspondiente de `src/data/` (con sus dos idiomas), consumida por `getServices`/`getProjects`/
+  etc. — cero cambios de componente si respeta la interfaz de `src/types/index.ts`.
 - Si el volumen de contenido crece (blog técnico, más de ~15 proyectos), migrar `src/data/*.ts` a
   **Content Collections** de Astro es el siguiente paso natural, sin reescribir componentes de
   presentación.
+
+---
+
+## 9. Internacionalización (i18n)
+
+### 9.1 Por qué routing nativo de Astro, no un toggle client-side
+
+El sitio es estático (`output: "static"`, sin SSR) y necesita que Google indexe **ambos** idiomas
+por separado — un toggle que cambia el DOM con JavaScript no genera URLs distintas por idioma, así
+que un crawler solo ve una versión. Astro trae routing i18n nativo (`i18n` en `astro.config.mjs`)
+que resuelve esto generando páginas HTML reales por idioma en build time, sin SSR ni adaptador:
+
+```js
+i18n: {
+  defaultLocale: "es",
+  locales: ["es", "en"],
+  routing: { prefixDefaultLocale: false },
+}
+```
+
+`defaultLocale: "es"` + `prefixDefaultLocale: false` deja el español en la raíz sin prefijo
+(`/nosotros`) — las URLs ya indexadas no cambian. El inglés vive bajo `/en/` con los **mismos
+slugs** (`/en/nosotros`, no `/en/about-us`): decisión explícita del cliente para no mantener una
+tabla de equivalencias de slugs, ver `CLAUDE.md` punto 21. Con esta config, `Astro.currentLocale`
+queda disponible automáticamente en cualquier archivo `.astro` según la ruta que se está
+renderizando, sin pasarlo por props.
+
+### 9.2 Páginas espejo, no un catch-all dinámico
+
+Astro con `output: "static"` no puede generar `/en/nosotros` a partir de un único archivo
+`nosotros.astro` — hace falta un archivo físico por ruta. La alternativa (un catch-all
+`[...slug].astro` con `getStaticPaths()` reconstruyendo metadata por ruta) se descartó por ser más
+compleja y menos transparente que simplemente duplicar el archivo; en cambio, cada página en
+`src/pages/` tiene su espejo en `src/pages/en/` con el mismo nombre de archivo. Cada espejo es
+delgado: importa los mismos componentes que la versión en español y solo escribe su propio copy
+(PageHeader, arrays inline, prosa) ya traducido — los componentes compartidos (`TeamSection`,
+`WhyUs`, `SpecialtiesTabs`...) **no se duplican**, leen `Astro.currentLocale` internamente.
+
+Única excepción: **`404.astro` no tiene espejo `/en/`**. GitHub Pages sirve un único `404.html` en
+la raíz para cualquier URL rota, sin importar el idioma de la ruta que falló — un `en/404.astro`
+sería código muerto en producción.
+
+### 9.3 Dónde vive cada tipo de string traducible
+
+Tres lugares distintos, según cuánto se reutiliza el texto:
+
+| Tipo de contenido | Dónde vive | Ejemplo |
+|---|---|---|
+| String de UI reutilizada en varios archivos | `src/i18n/ui.ts` (diccionario `{ es, en }`) | Labels del formulario, nav, footer, aria-labels |
+| Contenido estructurado repetido en tarjetas/listas | `src/data/*.ts`, campo `{ es, en }` en una estructura `*Source`, expuesto vía `getX(locale)` | Servicios, especialidades, equipo, recursos |
+| Copy único de una sola página (títulos, prosa larga) | Directamente en el archivo `en/*.astro`, ya traducido | `PageHeader`, párrafo de misión en `nosotros.astro`, prosa de `/legal`, `/recursos/*` |
+
+La regla para decidir dónde va un string nuevo: **si se usa en más de un archivo, al diccionario o
+a `data/`; si es de una sola página, se escribe traducido directamente en su espejo `en/`** — forzar
+todo por el diccionario infla `ui.ts` con claves que solo se leen una vez.
+
+`src/i18n/utils.ts` expone:
+
+- **`useTranslations(locale)`** → `t(key)`, para leer `ui.ts`.
+- **`localizedHref(path, locale)`** — antepone `/en` a una ruta interna si corresponde (es
+  idempotente: da igual si `path` ya trae el prefijo o no). Se compone con `withBase()` de
+  `src/utils/url.ts` en el punto de uso: `withBase(localizedHref(path, locale))` — mismo patrón
+  que ya exigía `withBase()` solo, ver `CLAUDE.md` "Tercera regla de oro". `Button.astro` ya
+  aplica ambos internamente.
+- **`alternateUrls(path)`** — URLs absolutas (dominio real, sin `base`) de la página equivalente en
+  cada idioma, usada tanto por `SEO.astro` (hreflang) como por `LanguageSwitcher.astro`.
+
+### 9.4 Datos estructurados: el patrón `getX(locale)`
+
+`src/data/{services,projects,technologies,team,navigation}.ts` ya no exportan el array
+directamente — exportan una función que lo recibe localizado, a partir de una estructura interna
+`*Source` donde cada campo traducible es `{ es: string, en: string }`:
+
+```ts
+// src/data/services.ts (extracto)
+interface ServiceSource {
+  index: string;
+  icon: string;
+  title: Localized;       // { es: "...", en: "..." }
+  description: Localized;
+  bullets: Localized<string[]>;
+}
+const servicesSource: ServiceSource[] = [ /* ... */ ];
+export function getServices(locale: Locale): Service[] {
+  return servicesSource.map((s) => ({ ...s, title: s.title[locale], description: s.description[locale], bullets: s.bullets[locale] }));
+}
+```
+
+El tipo público (`Service[]`, `Project[]`...) no cambia — los componentes que ya consumían el
+array solo cambian el import y llaman la función con el locale actual:
+`const services = getServices(locale)`. Excepción: `technologies.ts` exporta `technologies` sin
+función — los nombres de tecnología ("React", "AWS Lambda") son nombres propios, no se traducen;
+solo `resources` (los recursos de `/recursos`) tiene `getResources(locale)`.
+
+### 9.5 El formulario de contacto y los scripts de cliente
+
+`ContactForm.astro` tiene toda su validación en un único `<script>` inline (no un módulo externo),
+con mensajes de error/estado como strings literales. Para traducirlos sin convertir el script en
+un módulo con imports (lo que perdería el acceso directo al DOM sin más fricción), se usa
+`<script define:vars={{ i18n: {...} }}>` — el mecanismo oficial de Astro para inyectar valores
+computados en el servidor dentro de un script de cliente. El frontmatter arma un objeto
+`scriptI18n` con los mensajes ya traducidos vía `t()`, y el script los lee de `i18n.required`,
+`i18n.statusSuccess`, etc., en vez de tener los strings hardcodeados. El array `services` del
+`<select>` también sale de `ui.ts` (`contact.services.*`).
+
+### 9.6 Selector de idioma
+
+`LanguageSwitcher.astro` es deliberadamente un `<a href>` normal, sin estado de cliente ni JS —
+calcula la URL de la página actual en el otro idioma con `alternateUrls()`/`localizedHref()` y
+renderiza un link. Al no depender de JavaScript ni de referencias a elementos del DOM, no hereda
+el riesgo de bug de View Transitions que sí afecta a componentes con estado real (menú móvil,
+`SpecialtiesTabs`, ver `CLAUDE.md` punto 14) — es tan simple y robusto como cualquier otro link del
+Navbar. Recibe `pagePath` como prop, propagada desde `BaseLayout` → `Navbar` (la misma ruta
+canónica que ya se pasaba a `SEO.astro` como `path`).
