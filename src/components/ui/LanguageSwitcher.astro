@@ -1,0 +1,30 @@
+---
+import { withBase } from "@/utils/url";
+import { localizedHref, useTranslations } from "@/i18n/utils";
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/types";
+
+interface Props {
+  /** Ruta canónica de la página actual, tal como se pasa a `BaseLayout` (`path`). */
+  pagePath: string;
+  class?: string;
+}
+
+const { pagePath, class: className } = Astro.props;
+
+const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;
+const otherLocale: Locale = locale === "es" ? "en" : "es";
+const otherLabel = otherLocale === "en" ? "EN" : "ES";
+const t = useTranslations(locale);
+const href = withBase(localizedHref(pagePath, otherLocale));
+---
+
+<a
+  href={href}
+  aria-label={t("lang.switch")}
+  class:list={[
+    "inline-flex h-9 items-center justify-center rounded-full border border-gold-400/40 px-3 font-mono text-xs font-semibold tracking-wider text-gold-400 transition-colors duration-200 hover:border-gold-400 hover:bg-gold-400/10",
+    className,
+  ]}
+>
+  {otherLabel}
+</a>

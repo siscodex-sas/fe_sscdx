@@ -1,7 +1,12 @@
 ---
-import { footerLinks } from "@/data/navigation";
+import { getFooterLinks } from "@/data/navigation";
 import { withBase } from "@/utils/url";
+import { localizedHref, useTranslations } from "@/i18n/utils";
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/types";
 
+const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;
+const t = useTranslations(locale);
+const footerLinks = getFooterLinks(locale);
 const year = new Date().getFullYear();
 ---
 
@@ -9,7 +14,7 @@ const year = new Date().getFullYear();
   <div class="mx-auto max-w-(--container-page) px-4 py-16 sm:px-6 lg:px-8">
     <div class="grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
       <div class="flex flex-col justify-center">
-        <a href={withBase("/")} class="flex shrink-0 items-center">
+        <a href={withBase(localizedHref("/", locale))} class="flex shrink-0 items-center">
           <img src={withBase("/logo.png")} alt="Siscodex" width="182" height="20" class="h-6 w-auto" />
         </a>
       </div>
@@ -19,7 +24,7 @@ const year = new Date().getFullYear();
           <div class="flex flex-col gap-3">
             <h4 class="font-mono text-xs uppercase tracking-[0.2em] text-ink-400">{group.title}</h4>
             {group.links.map((link) => (
-              <a href={withBase(link.href)} class="text-sm text-ink-300 transition-colors hover:text-brand-300">
+              <a href={withBase(localizedHref(link.href, locale))} class="text-sm text-ink-300 transition-colors hover:text-brand-300">
                 {link.label}
               </a>
             ))}
@@ -30,7 +35,7 @@ const year = new Date().getFullYear();
 
     <div class="mt-14 flex flex-col items-center gap-1 border-t border-ink-700 pt-8 text-center text-xs text-ink-400">
       <p>© {year} Siscodex.</p>
-      <p>Todos los derechos reservados.</p>
+      <p>{t("footer.rights")}</p>
     </div>
   </div>
 </footer>

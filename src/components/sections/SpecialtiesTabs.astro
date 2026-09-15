@@ -1,7 +1,9 @@
 ---
 import { Icon } from "astro-icon/components";
 import SectionTitle from "@/components/ui/SectionTitle.astro";
-import { projects } from "@/data/projects";
+import { getProjects } from "@/data/projects";
+import { useTranslations } from "@/i18n/utils";
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/types";
 import type { Project } from "@/types";
 
 const categoryIcon: Record<Project["category"], string> = {
@@ -11,14 +13,18 @@ const categoryIcon: Record<Project["category"], string> = {
   mobile: "smartphone",
   health: "heart-pulse",
 };
+
+const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;
+const t = useTranslations(locale);
+const projects = getProjects(locale);
 ---
 
 <section class="border-y border-ink-700 bg-ink-900/60 py-24" id="soluciones">
   <div class="mx-auto max-w-(--container-page) px-4 sm:px-6 lg:px-8">
     <SectionTitle
-      eyebrow="Soluciones"
-      title="Especialización respaldada por experiencia real"
-      description="Nuestra experiencia en distintas industrias nos permite combinar ingeniería de software, arquitectura cloud e inteligencia artificial para transformar desafíos complejos en soluciones eficientes, escalables y de alto impacto."
+      eyebrow={t("specialties.eyebrow")}
+      title={t("specialties.title")}
+      description={t("specialties.description")}
     />
 
     <div data-specialty-tabs class="mt-12">
@@ -65,7 +71,7 @@ const categoryIcon: Record<Project["category"], string> = {
                 <div>
                   <p class="max-w-2xl text-base text-ink-300">{project.summary}</p>
 
-                  <p class="mt-6 font-mono text-xs uppercase tracking-[0.15em] text-brand-400">Qué incluye</p>
+                  <p class="mt-6 font-mono text-xs uppercase tracking-[0.15em] text-brand-400">{t("specialties.includes")}</p>
                   <ul class="mt-3 flex flex-col gap-2 text-sm text-ink-200">
                     {project.capabilities.map((capability) => (
                       <li class="flex items-baseline gap-2">
@@ -75,7 +81,7 @@ const categoryIcon: Record<Project["category"], string> = {
                     ))}
                   </ul>
 
-                  <p class="mt-6 font-mono text-xs uppercase tracking-[0.15em] text-brand-400">Para quién es esto</p>
+                  <p class="mt-6 font-mono text-xs uppercase tracking-[0.15em] text-brand-400">{t("specialties.idealFor")}</p>
                   <div class="mt-3 flex flex-wrap gap-2">
                     {project.idealFor.map((audience) => (
                       <span class="rounded-md border border-ink-600 px-2.5 py-1 text-xs text-ink-300">{audience}</span>

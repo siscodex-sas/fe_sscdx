@@ -1,6 +1,8 @@
 ---
 import { Icon } from "astro-icon/components";
 import { withBase } from "@/utils/url";
+import { useTranslations } from "@/i18n/utils";
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/types";
 import type { TeamMember } from "@/types";
 
 interface Props {
@@ -8,6 +10,8 @@ interface Props {
 }
 
 const { member } = Astro.props;
+const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;
+const t = useTranslations(locale);
 ---
 
 <article class="team-flip-card relative aspect-[4/5]" data-team-flip data-reveal>
@@ -18,7 +22,7 @@ const { member } = Astro.props;
       class="team-flip-face absolute inset-0 cursor-pointer overflow-hidden rounded-lg border border-ink-700/80 text-left transition-colors duration-300 hover:border-gold-400/40"
       data-team-flip-toggle
       aria-expanded="false"
-      aria-label={`Ver la trayectoria de ${member.name}`}
+      aria-label={`${t("team.card.viewTrajectory")} ${member.name}`}
     >
       <img
         src={withBase(member.photo)}
@@ -45,7 +49,7 @@ const { member } = Astro.props;
         data-team-flip-toggle
         class="sr-only focus:not-sr-only focus:absolute focus:right-4 focus:top-4 focus:z-10 focus:size-8 focus:rounded-full focus:bg-gold-400/10 focus:text-gold-400"
       >
-        {`Cerrar perfil de ${member.name}`}
+        {`${t("team.card.close")} ${member.name}`}
       </button>
 
       <span class="font-mono text-xs uppercase tracking-[0.15em] text-ember-400">{member.roleFull}</span>
@@ -71,7 +75,7 @@ const { member } = Astro.props;
               href={member.website}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label={`Sitio web de ${member.name}`}
+              aria-label={`${t("team.card.website")} ${member.name}`}
               class="flex size-9 items-center justify-center rounded-md bg-white/5 text-white transition-transform hover:scale-110 hover:text-brand-400"
             >
               <Icon name="lucide:globe" class="size-4" />
@@ -82,7 +86,7 @@ const { member } = Astro.props;
           href={member.linkedin}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label={`Perfil de LinkedIn de ${member.name}`}
+          aria-label={`${t("team.card.linkedin")} ${member.name}`}
           class="flex size-9 items-center justify-center rounded-md bg-white/5 text-white transition-transform hover:scale-110 hover:text-brand-400"
         >
           <Icon name="lucide:linkedin" class="size-4" />

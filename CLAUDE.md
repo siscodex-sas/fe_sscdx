@@ -35,8 +35,9 @@ src/
 │   ├── layout/     → Navbar, Footer (en todas las páginas)
 │   └── seo/        → <SEO /> (metadata, OG, JSON-LD)
 ├── data/           → contenido tipado: services.ts, projects.ts, technologies.ts, team.ts, navigation.ts
+├── i18n/           → ui.ts (diccionario ES/EN), utils.ts (t(), localizedHref(), alternateUrls()), types.ts (Locale)
 ├── layouts/        → BaseLayout (páginas normales), SimpleContentLayout (legal/recursos)
-├── pages/          → rutas (file-based routing de Astro)
+├── pages/          → rutas (file-based routing de Astro) — en/ espeja cada página en inglés
 ├── scripts/        → reveal.ts (scroll-reveal con la librería "motion")
 ├── styles/         → global.css — AQUÍ VIVE TODO EL SISTEMA DE COLOR/TIPOGRAFÍA (@theme de Tailwind v4)
 ├── types/          → contratos de datos (Service, Project, Technology...)
@@ -57,6 +58,12 @@ pero un `<a href="/algo">` o `<img src="/algo">` escrito a mano, no. Si no se en
 funciona en local y en producción con dominio propio (`base: "/"`), pero se rompe apenas alguien
 prueba en un GitHub Pages de proyecto (`base: "/fe_sscdx"`) — es exactamente el bug que se encontró
 y arregló la primera vez que se probó ahí (ver punto 7 de "Historial de decisiones").
+
+**Tercera regla de oro (i18n)**: si el href es de una *página* (no un asset como `/logo.png`),
+`withBase()` solo no alcanza — hay que componerlo con `localizedHref()` de `src/i18n/utils.ts`:
+`withBase(localizedHref(path, locale))`. `Button.astro` ya lo hace internamente (igual que con
+`withBase()`), así que `<Button href="/contacto">` funciona solo en ambos idiomas — pero un
+`<a href="/algo">` escrito a mano necesita el envoltorio manual. Ver "Internacionalización" abajo.
 
 ## Sistema de diseño actual (estado real, septiembre 2026)
 
@@ -87,6 +94,48 @@ y arregló la primera vez que se probó ahí (ver punto 7 de "Historial de decis
 Es **filas simples de icono + texto en 2 columnas, sin tarjeta ni borde** — no una grilla de
 tarjetas. Si alguna vez se ve una versión con `border`/`bg` ahí, es una regresión: se cambió a
 propósito para igualar una referencia visual real que compartió el cliente.
+
+## Internacionalización (i18n)
+
+El sitio es español por defecto (sin prefijo, `/nosotros`) con inglés bajo `/en/` con los
+**mismos slugs** (`/en/nosotros`, no `/en/about-us` — decisión explícita del cliente: más simple,
+sin tabla de equivalencias de slugs). Usa el routing i18n nativo de Astro (`i18n` en
+`astro.config.mjs`, `defaultLocale: "es"`, `prefixDefaultLocale: false`).
+
+- **`src/i18n/ui.ts`**: diccionario `{ es: {...}, en: {...} }` de strings de UI *reutilizables*
+  (nav, footer, formulario de contacto, defaults de secciones compartidas, aria-labels). `const t
+  = useTranslations(locale)` en el frontmatter, luego `{t("clave")}`.
+- **Copy propio de cada página NO va en el diccionario** — títulos, `PageHeader`, arrays inline
+  (`values` en nosotros.astro), la prosa de legal/recursos, se escriben directamente traducidos en
+  el archivo `en/*.astro` correspondiente. Solo lo que se *reutiliza* entre varios archivos vive en
+  `ui.ts` — si algo solo se usa una vez, indirectarlo por una clave es ruido, no ayuda.
+- **`src/data/{services,projects,technologies,team,navigation}.ts`**: cada campo traducible es
+  `{ es: "...", en: "..." }` en una estructura `*Source` interna; el archivo exporta una función
+  `getServices(locale)` / `getProjects(locale)` / etc. que devuelve el shape localizado de siempre
+  (`Service[]`, `Project[]`...) — los componentes que ya consumían el array directamente solo
+  cambian a llamar la función con `Astro.currentLocale`. Los nombres de tecnología
+  (`technologies.ts` → `technologies`, sin función) **no se traducen** — son nombres propios.
+- **`Astro.currentLocale`** está disponible en cualquier `.astro` sin pasarlo por props — patrón
+  usado en todos partes: `const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;`.
+- **`ContactForm.astro`**: el `<script>` de validación es inline, así que las strings traducidas
+  (mensajes de error, estado de envío) se inyectan con `<script define:vars={{ i18n: {...} }}>`
+  (mecanismo oficial de Astro para pasar valores server-computed a un script de cliente) — el
+  script las lee de `i18n.required`, etc., en vez de tener strings literales.
+- **`LanguageSwitcher.astro`** (pastilla dorada en el Navbar, "EN"/"ES"): es un `<a href>` normal,
+  sin JS — calcula la URL equivalente en el otro idioma con `alternateUrls()`/`localizedHref()` de
+  `src/i18n/utils.ts`. Al no tener estado de cliente, no hay riesgo de bug de View Transitions
+  (contraste con el bug del punto 14 de abajo). Recibe `pagePath` como prop desde `BaseLayout` →
+  `Navbar` (la ruta canónica de la página, la misma que ya se pasaba a `SEO.astro`).
+- **`404.astro` no tiene versión `/en/`** a propósito: GitHub Pages sirve un único `404.html` en la
+  raíz del sitio para cualquier ruta rota, sin importar el idioma de la URL — un `en/404.astro`
+  sería inalcanzable en producción.
+- **SEO**: `SEO.astro` agrega `<link rel="alternate" hreflang="es|en|x-default">` (vía
+  `alternateUrls()`) y `og:locale` dinámico (`es_ES`/`en_US`); `BaseLayout.astro` pone
+  `<html lang={locale}>` dinámico. El sitemap (`@astrojs/sitemap`) incluye automáticamente las 22
+  URLs (11 páginas × 2 idiomas) sin config extra — **no** genera anotaciones `xhtml:link` de
+  alternates dentro del sitemap (solo en el `<head>` de cada página vía `SEO.astro`), que es
+  suficiente para Google/Bing.
+- **Ver punto 21** de "Historial de decisiones" para el detalle completo de cómo se implementó.
 
 ## Historial de decisiones (para no repetir trabajo ni confundirse con git blame)
 
@@ -207,6 +256,15 @@ propósito para igualar una referencia visual real que compartió el cliente.
     `develop` — deja una sola base clara y GitHub recalcula el PR como mergeable. Si "GitHub dice
     conflicto pero `git merge` local no", sospechar de esto antes de resolver manualmente algo que
     no está roto.
+21. **Internacionalización ES/EN**: el cliente pidió español por defecto con opción de cambiar a
+    inglés, "todo traducido, cada palabra, cada rincón" — se implementó con el routing i18n nativo
+    de Astro (`/en/` con los mismos slugs, ver sección "Internacionalización" arriba) en vez de un
+    toggle client-side, porque un sitio estático necesita URLs reales por idioma para que Google
+    indexe ambas versiones (SSR/CSR toggles no son indexables igual). Se tradujeron las 11 páginas
+    completas, incluyendo la prosa larga de legal/recursos y el formulario de contacto con su
+    script de validación. Decisión explícita del cliente: slugs iguales bajo `/en/` (no
+    `/en/about-us`), para no mantener una tabla de equivalencias — más simple y menos propenso a
+    bugs en el selector de idioma.
 
 ## Pendientes conocidos antes de un lanzamiento real
 
@@ -226,6 +284,10 @@ propósito para igualar una referencia visual real que compartió el cliente.
   de datos (`Project` en `src/types/index.ts`: `summary`, `capabilities`, `idealFor`).
 - No hay tests automatizados (deliberado por ahora — ver justificación y estructura recomendada en
   `docs/ARCHITECTURE.md` §8.3).
+- Las traducciones al inglés (`src/i18n/ui.ts`, campos `en` en `src/data/*.ts`, y las 11 páginas
+  bajo `src/pages/en/`) las escribió Claude — funcionalmente completas y consistentes, pero no las
+  ha revisado un hablante nativo de inglés. Antes de un lanzamiento real, vale la pena una pasada
+  de revisión humana, especialmente en el copy de marketing (Hero, WhyUs, especialidades).
 
 ## Deployment
 

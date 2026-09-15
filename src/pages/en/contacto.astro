@@ -1,0 +1,19 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PageHeader from "@/components/sections/PageHeader.astro";
+import ContactForm from "@/components/sections/ContactForm.astro";
+---
+
+<BaseLayout
+  title="Contact"
+  description="Book a technical conversation with Siscodex to discuss your custom software, cloud or artificial intelligence project."
+  path="/en/contacto"
+>
+  <PageHeader
+    eyebrow="Contact"
+    title="Let's start a technical conversation"
+    description="We respond within 24 business hours. No endless forms, no sales middlemen."
+  />
+
+  <ContactForm />
+</BaseLayout>

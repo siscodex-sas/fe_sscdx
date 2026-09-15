@@ -1,0 +1,30 @@
+---
+import SimpleContentLayout from "@/layouts/SimpleContentLayout.astro";
+---
+
+<SimpleContentLayout
+  eyebrow="Resources · Security"
+  title="Security best practices"
+  intro="Guidelines we follow on every project: secrets management, code review and audits."
+  description="Security best practices we apply across Siscodex development projects."
+  path="/en/recursos/seguridad"
+  noindex
+>
+  <h2>Secrets management</h2>
+  <p>
+    No credentials are stored in source code. We use secrets managers (AWS Secrets Manager,
+    encrypted environment variables) and periodic rotation of access keys.
+  </p>
+
+  <h2>Code review</h2>
+  <p>
+    Every change goes through review by at least one senior engineer before merging into the main
+    branch, with automated static analysis on every pull request.
+  </p>
+
+  <h2>Audits</h2>
+  <p>
+    For projects that handle sensitive data, we coordinate external security audits before
+    launching to production.
+  </p>
+</SimpleContentLayout>

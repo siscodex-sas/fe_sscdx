@@ -13,15 +13,15 @@ const resources = getResources(locale);
 ---
 
 <BaseLayout
-  title="Recursos"
-  description="Documentación, guías de onboarding y recursos de soporte para clientes actuales de Siscodex."
-  path="/recursos"
+  title="Resources"
+  description="Documentation, onboarding guides and support resources for current Siscodex clients."
+  path="/en/recursos"
   noindex
 >
   <PageHeader
-    eyebrow="Recursos"
-    title="Documentación para clientes actuales"
-    description="Todo lo que tu equipo necesita para trabajar con nosotros: guías de proceso, documentación técnica y canales de soporte."
+    eyebrow="Resources"
+    title="Documentation for current clients"
+    description="Everything your team needs to work with us: process guides, technical documentation and support channels."
   />
 
   <section class="py-16">
@@ -42,7 +42,7 @@ const resources = getResources(locale);
               <h3 class="mt-5 text-lg font-semibold text-ink-50">{resource.title}</h3>
               <p class="mt-2 text-sm text-ink-300">{resource.description}</p>
               <span class="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-brand-300 transition-transform group-hover:translate-x-1">
-                Ver más
+                Learn more
                 <Icon name="lucide:arrow-right" class="size-4" />
               </span>
             </a>
@@ -53,8 +53,8 @@ const resources = getResources(locale);
   </section>
 
   <CTASection
-    title="¿Eres cliente y no encuentras lo que buscas?"
-    description="Escríbenos directamente y te dirigimos al recurso o persona correcta."
-    primaryCta={{ label: "Contactar soporte", href: "/contacto" }}
+    title="Are you a client and can't find what you're looking for?"
+    description="Write to us directly and we'll point you to the right resource or person."
+    primaryCta={{ label: "Contact support", href: "/contacto" }}
   />
 </BaseLayout>

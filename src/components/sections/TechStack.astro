@@ -3,6 +3,8 @@ import SectionTitle from "@/components/ui/SectionTitle.astro";
 import TechnologyBadge from "@/components/ui/TechnologyBadge.astro";
 import Button from "@/components/ui/Button.astro";
 import { technologies } from "@/data/technologies";
+import { useTranslations } from "@/i18n/utils";
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/types";
 
 interface Props {
   align?: "left" | "center";
@@ -10,15 +12,17 @@ interface Props {
 }
 
 const { align = "center", showViewAllLink = false } = Astro.props;
+const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;
+const t = useTranslations(locale);
 ---
 
 <section class="py-24" id="tecnologia">
   <div class="mx-auto max-w-(--container-page) px-4 sm:px-6 lg:px-8">
     <SectionTitle
       align={align}
-      eyebrow="Stack tecnológico"
-      title="Herramientas de nivel empresarial"
-      description="Priorizamos tecnología madura y probada en producción, con estabilidad y soporte a largo plazo."
+      eyebrow={t("tech.eyebrow")}
+      title={t("tech.title")}
+      description={t("tech.description")}
       class={align === "center" ? "mx-auto items-center text-center" : undefined}
     />
 
@@ -30,7 +34,7 @@ const { align = "center", showViewAllLink = false } = Astro.props;
       showViewAllLink && (
         <div class="mt-10 flex justify-center">
           <Button href="/tecnologia" variant="secondary" icon="arrow-right">
-            Ver todo el stack tecnológico
+            {t("tech.viewAll")}
           </Button>
         </div>
       )

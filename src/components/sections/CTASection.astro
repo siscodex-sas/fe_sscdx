@@ -1,5 +1,7 @@
 ---
 import Button from "@/components/ui/Button.astro";
+import { useTranslations } from "@/i18n/utils";
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/types";
 
 interface Props {
   title: string;
@@ -8,10 +10,13 @@ interface Props {
   secondaryCta?: { label: string; href: string };
 }
 
+const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;
+const t = useTranslations(locale);
+
 const {
   title,
   description,
-  primaryCta = { label: "Agendar una consulta", href: "/contacto" },
+  primaryCta = { label: t("cta.default.primary"), href: "/contacto" },
   secondaryCta,
 } = Astro.props;
 ---
