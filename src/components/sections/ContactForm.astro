@@ -1,15 +1,32 @@
 ---
 import { Icon } from "astro-icon/components";
 import Button from "@/components/ui/Button.astro";
+import { useTranslations } from "@/i18n/utils";
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/types";
+
+const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;
+const t = useTranslations(locale);
 
 const services = [
-  "Desarrollo de software a medida",
-  "Infraestructura y arquitectura cloud",
-  "Inteligencia artificial aplicada",
-  "Modernización de plataformas",
-  "Sistemas empresariales",
-  "Otro",
+  t("contact.services.custom"),
+  t("contact.services.cloud"),
+  t("contact.services.ai"),
+  t("contact.services.modernization"),
+  t("contact.services.enterprise"),
+  t("contact.services.other"),
 ];
+
+const scriptI18n = {
+  required: t("contact.error.required"),
+  email: t("contact.error.email"),
+  phonePattern: t("contact.error.phonePattern"),
+  minLength: t("contact.error.minLength"),
+  generic: t("contact.error.generic"),
+  statusSuccess: t("contact.status.success"),
+  statusError: t("contact.status.error"),
+  submitLabel: t("contact.form.submit"),
+  submittingLabel: t("contact.form.submitting"),
+};
 
 const inputClasses =
   "rounded-md border border-ink-600 bg-ink-900/60 px-4 py-2.5 text-sm text-ink-50 placeholder:text-ink-500 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400/30 aria-[invalid=true]:border-danger-400 aria-[invalid=true]:focus:border-danger-400 aria-[invalid=true]:focus:ring-danger-400/30";
@@ -30,12 +47,12 @@ const inputClasses =
       -->
       <form id="contact-form" class="grid grid-cols-1 gap-5 sm:grid-cols-2" novalidate>
         <div class="hidden" aria-hidden="true">
-          <label for="website">Deja este campo vacío</label>
+          <label for="website">{t("contact.form.honeypotLabel")}</label>
           <input id="website" name="website" type="text" tabindex="-1" autocomplete="off" />
         </div>
 
         <div class="flex flex-col gap-2">
-          <label for="name" class="font-mono text-xs uppercase tracking-wider text-ink-400">Nombre *</label>
+          <label for="name" class="font-mono text-xs uppercase tracking-wider text-ink-400">{t("contact.form.name")} *</label>
           <input
             id="name"
             name="name"
@@ -45,14 +62,14 @@ const inputClasses =
             aria-invalid="false"
             aria-describedby="name-error"
             autocomplete="name"
-            placeholder="Tu nombre completo"
+            placeholder={t("contact.form.placeholder.name")}
             class={inputClasses}
           />
           <p id="name-error" data-error-for="name" class="hidden text-xs text-danger-400" role="alert"></p>
         </div>
 
         <div class="flex flex-col gap-2">
-          <label for="company" class="font-mono text-xs uppercase tracking-wider text-ink-400">Empresa *</label>
+          <label for="company" class="font-mono text-xs uppercase tracking-wider text-ink-400">{t("contact.form.company")} *</label>
           <input
             id="company"
             name="company"
@@ -62,14 +79,14 @@ const inputClasses =
             aria-invalid="false"
             aria-describedby="company-error"
             autocomplete="organization"
-            placeholder="Nombre de tu empresa"
+            placeholder={t("contact.form.placeholder.company")}
             class={inputClasses}
           />
           <p id="company-error" data-error-for="company" class="hidden text-xs text-danger-400" role="alert"></p>
         </div>
 
         <div class="flex flex-col gap-2">
-          <label for="email" class="font-mono text-xs uppercase tracking-wider text-ink-400">Email de trabajo *</label>
+          <label for="email" class="font-mono text-xs uppercase tracking-wider text-ink-400">{t("contact.form.email")} *</label>
           <input
             id="email"
             name="email"
@@ -79,14 +96,14 @@ const inputClasses =
             aria-invalid="false"
             aria-describedby="email-error"
             autocomplete="email"
-            placeholder="tu@empresa.com"
+            placeholder={t("contact.form.placeholder.email")}
             class={inputClasses}
           />
           <p id="email-error" data-error-for="email" class="hidden text-xs text-danger-400" role="alert"></p>
         </div>
 
         <div class="flex flex-col gap-2">
-          <label for="phone" class="font-mono text-xs uppercase tracking-wider text-ink-400">Teléfono *</label>
+          <label for="phone" class="font-mono text-xs uppercase tracking-wider text-ink-400">{t("contact.form.phone")} *</label>
           <input
             id="phone"
             name="phone"
@@ -98,14 +115,14 @@ const inputClasses =
             autocomplete="tel"
             inputmode="tel"
             pattern="[0-9+()\s-]{7,20}"
-            placeholder="+1 (555) 000-0000"
+            placeholder={t("contact.form.placeholder.phone")}
             class={inputClasses}
           />
           <p id="phone-error" data-error-for="phone" class="hidden text-xs text-danger-400" role="alert"></p>
         </div>
 
         <div class="flex flex-col gap-2 sm:col-span-2">
-          <label for="service" class="font-mono text-xs uppercase tracking-wider text-ink-400">Servicio de interés *</label>
+          <label for="service" class="font-mono text-xs uppercase tracking-wider text-ink-400">{t("contact.form.service")} *</label>
           <select
             id="service"
             name="service"
@@ -116,7 +133,7 @@ const inputClasses =
             class={inputClasses}
           >
             <option value="" selected disabled>
-              Selecciona un servicio
+              {t("contact.form.placeholder.service")}
             </option>
             {services.map((service) => <option value={service}>{service}</option>)}
           </select>
@@ -125,7 +142,7 @@ const inputClasses =
 
         <div class="flex flex-col gap-2 sm:col-span-2">
           <label for="message" class="font-mono text-xs uppercase tracking-wider text-ink-400">
-            Descripción del proyecto *
+            {t("contact.form.message")} *
           </label>
           <textarea
             id="message"
@@ -136,7 +153,7 @@ const inputClasses =
             aria-invalid="false"
             aria-describedby="message-error"
             minlength="20"
-            placeholder="Cuéntanos brevemente tu necesidad técnica, plazos y alcance estimado..."
+            placeholder={t("contact.form.placeholder.message")}
             class:list={["resize-none", inputClasses]}
           ></textarea>
           <p id="message-error" data-error-for="message" class="hidden text-xs text-danger-400" role="alert"></p>
@@ -145,7 +162,7 @@ const inputClasses =
         <div class="sm:col-span-2">
           <Button type="submit" size="lg" class="w-full justify-center">
             <Icon name="lucide:loader-2" class="hidden size-4 animate-spin" data-submit-spinner />
-            <span data-submit-label>Enviar solicitud</span>
+            <span data-submit-label>{t("contact.form.submit")}</span>
           </Button>
           <p data-form-status class="mt-3 hidden text-center text-sm" role="status"></p>
         </div>
@@ -154,35 +171,34 @@ const inputClasses =
   </div>
 </section>
 
-<script>
+<script is:inline define:vars={{ i18n: scriptI18n }}>
   document.addEventListener("astro:page-load", () => {
-    const form = document.getElementById("contact-form") as HTMLFormElement | null;
-    const status = document.querySelector<HTMLParagraphElement>("[data-form-status]");
-    const submitButton = form?.querySelector<HTMLButtonElement>('button[type="submit"]');
-    const submitLabel = form?.querySelector<HTMLElement>("[data-submit-label]");
-    const submitSpinner = form?.querySelector<HTMLElement>("[data-submit-spinner]");
+    const form = document.getElementById("contact-form");
+    const status = document.querySelector("[data-form-status]");
+    const submitButton = form?.querySelector('button[type="submit"]');
+    const submitLabel = form?.querySelector("[data-submit-label]");
+    const submitSpinner = form?.querySelector("[data-submit-spinner]");
     if (!form || !status) return;
 
-    const requiredFieldNames = ["name", "company", "email", "phone", "service", "message"] as const;
-    type RequiredField = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+    const requiredFieldNames = ["name", "company", "email", "phone", "service", "message"];
 
-    function getField(name: string): RequiredField | null {
+    function getField(name) {
       const field = form?.elements.namedItem(name);
       return field instanceof HTMLInputElement || field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement
         ? field
         : null;
     }
 
-    function getErrorMessage(field: RequiredField) {
+    function getErrorMessage(field) {
       const validity = field.validity;
-      if (validity.valueMissing) return "Este campo es obligatorio.";
-      if (validity.typeMismatch) return "Ingresa un email válido.";
-      if (validity.patternMismatch) return "Ingresa solo números (puedes usar +, espacios, paréntesis o guiones).";
-      if (validity.tooShort) return `Escribe al menos ${(field as HTMLInputElement).minLength} caracteres.`;
-      return field.validationMessage || "Revisa este campo.";
+      if (validity.valueMissing) return i18n.required;
+      if (validity.typeMismatch) return i18n.email;
+      if (validity.patternMismatch) return i18n.phonePattern;
+      if (validity.tooShort) return i18n.minLength.replace("{min}", String(field.minLength));
+      return field.validationMessage || i18n.generic;
     }
 
-    function validateField(field: RequiredField) {
+    function validateField(field) {
       const isValid = field.checkValidity();
       field.setAttribute("aria-invalid", String(!isValid));
       const errorEl = document.getElementById(`${field.name}-error`);
@@ -203,18 +219,15 @@ const inputClasses =
       });
     });
 
-    function setLoading(isLoading: boolean) {
+    function setLoading(isLoading) {
       if (submitButton) submitButton.disabled = isLoading;
       submitSpinner?.classList.toggle("hidden", !isLoading);
-      if (submitLabel) submitLabel.textContent = isLoading ? "Enviando…" : "Enviar solicitud";
+      if (submitLabel) submitLabel.textContent = isLoading ? i18n.submittingLabel : i18n.submitLabel;
     }
 
-    function showStatus(kind: "success" | "error") {
+    function showStatus(kind) {
       if (!status) return;
-      status.textContent =
-        kind === "success"
-          ? "¡Gracias por escribirnos! Un miembro de nuestro equipo revisará tu solicitud y se pondrá en contacto contigo pronto."
-          : "Revisa los campos marcados antes de enviar.";
+      status.textContent = kind === "success" ? i18n.statusSuccess : i18n.statusError;
       status.classList.remove("hidden", "text-brand-300", "text-danger-400");
       status.classList.add(kind === "success" ? "text-brand-300" : "text-danger-400");
       status.setAttribute("role", kind === "success" ? "status" : "alert");
@@ -224,7 +237,7 @@ const inputClasses =
       event.preventDefault();
       status.classList.add("hidden");
 
-      const honeypot = getField("website") as HTMLInputElement | null;
+      const honeypot = getField("website");
       if (honeypot && honeypot.value.trim() !== "") {
         // Campo trampa lleno = bot. Fingir éxito sin enviar nada.
         form.reset();
@@ -232,7 +245,7 @@ const inputClasses =
         return;
       }
 
-      let firstInvalid: RequiredField | null = null;
+      let firstInvalid = null;
       requiredFieldNames.forEach((name) => {
         const field = getField(name);
         if (!field) return;
@@ -241,7 +254,7 @@ const inputClasses =
       });
 
       if (firstInvalid) {
-        (firstInvalid as RequiredField).focus();
+        firstInvalid.focus();
         showStatus("error");
         return;
       }

@@ -1,5 +1,7 @@
 import type { Resource, Technology } from "@/types";
+import type { Locale, Localized } from "@/i18n/types";
 
+/** Nombres de tecnología: nombres propios, no se traducen entre idiomas. */
 export const technologies: Technology[] = [
   { name: "TypeScript", icon: "logos:typescript-icon", category: "frontend" },
   { name: "React", icon: "logos:react", category: "frontend" },
@@ -29,33 +31,63 @@ export const technologies: Technology[] = [
   { name: "VTK", icon: "lucide:box", category: "3d" },
 ];
 
-export const resources: Resource[] = [
+interface ResourceSource {
+  title: Localized;
+  description: Localized;
+  icon: string;
+  href: string;
+  tag: Localized;
+}
+
+const resourcesSource: ResourceSource[] = [
   {
-    title: "Guía de onboarding para clientes",
-    description: "Cómo trabajamos, canales de comunicación y qué esperar en las primeras semanas del proyecto.",
+    title: { es: "Guía de onboarding para clientes", en: "Client onboarding guide" },
+    description: {
+      es: "Cómo trabajamos, canales de comunicación y qué esperar en las primeras semanas del proyecto.",
+      en: "How we work, communication channels, and what to expect in the first weeks of the project.",
+    },
     icon: "book-open",
     href: "/recursos/onboarding",
-    tag: "Guía",
+    tag: { es: "Guía", en: "Guide" },
   },
   {
-    title: "Documentación de API y entregables",
-    description: "Acceso a la documentación técnica de proyectos activos para equipos de clientes.",
+    title: { es: "Documentación de API y entregables", en: "API documentation and deliverables" },
+    description: {
+      es: "Acceso a la documentación técnica de proyectos activos para equipos de clientes.",
+      en: "Access to technical documentation for active projects, for client teams.",
+    },
     icon: "file-text",
     href: "/recursos/documentacion",
-    tag: "Documentación",
+    tag: { es: "Documentación", en: "Documentation" },
   },
   {
-    title: "SLA y soporte post-lanzamiento",
-    description: "Niveles de servicio, tiempos de respuesta y canales de soporte una vez el proyecto está en producción.",
+    title: { es: "SLA y soporte post-lanzamiento", en: "SLA and post-launch support" },
+    description: {
+      es: "Niveles de servicio, tiempos de respuesta y canales de soporte una vez el proyecto está en producción.",
+      en: "Service levels, response times and support channels once the project is in production.",
+    },
     icon: "life-buoy",
     href: "/recursos/soporte",
-    tag: "Soporte",
+    tag: { es: "Soporte", en: "Support" },
   },
   {
-    title: "Buenas prácticas de seguridad",
-    description: "Lineamientos que seguimos en cada proyecto: gestión de secretos, revisión de código y auditorías.",
+    title: { es: "Buenas prácticas de seguridad", en: "Security best practices" },
+    description: {
+      es: "Lineamientos que seguimos en cada proyecto: gestión de secretos, revisión de código y auditorías.",
+      en: "Guidelines we follow on every project: secrets management, code review and audits.",
+    },
     icon: "shield-check",
     href: "/recursos/seguridad",
-    tag: "Seguridad",
+    tag: { es: "Seguridad", en: "Security" },
   },
 ];
+
+export function getResources(locale: Locale): Resource[] {
+  return resourcesSource.map((r) => ({
+    title: r.title[locale],
+    description: r.description[locale],
+    icon: r.icon,
+    href: r.href,
+    tag: r.tag[locale],
+  }));
+}

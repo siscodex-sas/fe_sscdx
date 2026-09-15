@@ -4,16 +4,18 @@ import SEO from "@/components/seo/SEO.astro";
 import Navbar from "@/components/layout/Navbar.astro";
 import Footer from "@/components/layout/Footer.astro";
 import { withBase } from "@/utils/url";
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/types";
 import type { SEOProps } from "@/types";
 import "@/styles/global.css";
 
 interface Props extends SEOProps {}
 
 const { title, description, path, image, noindex } = Astro.props;
+const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;
 ---
 
 <!doctype html>
-<html lang="es">
+<html lang={locale}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -24,7 +26,7 @@ const { title, description, path, image, noindex } = Astro.props;
     <ClientRouter />
   </head>
   <body>
-    <Navbar />
+    <Navbar pagePath={path} />
     <main id="top">
       <slot />
     </main>

@@ -1,15 +1,21 @@
 ---
 import TeamCard from "@/components/sections/TeamCard.astro";
 import SectionTitle from "@/components/ui/SectionTitle.astro";
-import { team } from "@/data/team";
+import { getTeam } from "@/data/team";
+import { useTranslations } from "@/i18n/utils";
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/types";
+
+const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;
+const t = useTranslations(locale);
+const team = getTeam(locale);
 ---
 
 <section class="py-16" id="equipo">
   <div class="mx-auto max-w-(--container-page) px-4 sm:px-6 lg:px-8">
     <SectionTitle
-      eyebrow="Liderazgo"
-      title="Acceso directo a quienes toman las decisiones"
-      description="Hablas con el liderazgo desde el primer día — respaldado por un equipo completo detrás de cada proyecto."
+      eyebrow={t("team.eyebrow")}
+      title={t("team.title")}
+      description={t("team.description")}
     />
 
     <div class="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">

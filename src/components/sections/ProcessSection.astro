@@ -1,16 +1,23 @@
 ---
 import { Icon } from "astro-icon/components";
 import SectionTitle from "@/components/ui/SectionTitle.astro";
-import { processSteps, processCapabilities } from "@/data/services";
+import { getProcessSteps, getProcessCapabilities } from "@/data/services";
+import { useTranslations } from "@/i18n/utils";
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/types";
+
+const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;
+const t = useTranslations(locale);
+const processSteps = getProcessSteps(locale);
+const processCapabilities = getProcessCapabilities(locale);
 ---
 
 <section class="py-24" id="proceso">
   <div class="mx-auto max-w-(--container-page) px-4 sm:px-6 lg:px-8">
     <SectionTitle
       align="center"
-      eyebrow="Metodología"
-      title="Cómo trabajamos"
-      description="Entendemos tu negocio, avanzamos con transparencia y te acompañamos en cada etapa — no solo escribimos código."
+      eyebrow={t("process.eyebrow")}
+      title={t("process.title")}
+      description={t("process.description")}
       class="mx-auto items-center text-center"
     />
 

@@ -21,6 +21,17 @@ export default defineConfig({
   output: "static",
   compressHTML: true,
 
+  // Español por defecto sin prefijo (URLs ya indexadas, no se tocan);
+  // inglés vive bajo /en/ con los mismos slugs — ver src/i18n/ y
+  // CLAUDE.md § Internacionalización para el detalle de la arquitectura.
+  i18n: {
+    defaultLocale: "es",
+    locales: ["es", "en"],
+    routing: {
+      prefixDefaultLocale: false,
+    },
+  },
+
   // /servicios y /soluciones dejaron de ser páginas propias (su contenido se
   // fusionó en el home) — se mantienen como redirects estáticos (meta-refresh)
   // para no romper bookmarks/enlaces externos ya indexados.
