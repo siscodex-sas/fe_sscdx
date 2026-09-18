@@ -12,6 +12,8 @@ export const ui = {
     "nav.aria.menu": "Abrir menú de navegación",
     "nav.cta": "Hablemos",
     "lang.switch": "Cambiar a inglés",
+    "theme.switchToLight": "Cambiar a modo claro",
+    "theme.switchToDark": "Cambiar a modo oscuro",
 
     "footer.rights": "Todos los derechos reservados.",
 
@@ -96,6 +98,8 @@ export const ui = {
     "nav.aria.menu": "Open navigation menu",
     "nav.cta": "Let's talk",
     "lang.switch": "Switch to Spanish",
+    "theme.switchToLight": "Switch to light mode",
+    "theme.switchToDark": "Switch to dark mode",
 
     "footer.rights": "All rights reserved.",
 

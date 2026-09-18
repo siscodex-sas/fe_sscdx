@@ -57,6 +57,11 @@
   /* ---------- Danger: color semántico de error de formulario, separado de los acentos de marca ---------- */
   --color-danger-400: #f2555f;
 
+  /* ---------- Fixed: SIEMPRE oscuro, no invierte con el tema — texto sobre un fill
+     saturado (botón primario) o sobre la foto+scrim de TeamCard, donde el contraste
+     necesario no depende de si el sitio está en modo claro u oscuro. ---------- */
+  --color-fixed-dark: #1a1b1e;
+
   /* ---------- Radios y contenedor ---------- */
   --radius-sm: 0.375rem;
   --radius-md: 0.625rem;
@@ -69,6 +74,46 @@
   --animate-fade-in: fade-in 0.6s ease-out both;
   --animate-pulse-dot: pulse-dot 2.2s ease-in-out infinite;
   --animate-drift: drift 16s ease-in-out infinite alternate;
+}
+
+/*
+ * Modo claro ("Paper"): redefine los MISMOS tokens de @theme bajo
+ * :root[data-theme="light"] — como los generan como utilidades vía
+ * var(--color-x), toda la app repinta sola, sin tocar componentes (ver
+ * CLAUDE.md § Internacionalización... perdón, § Modo claro). `--color-fixed-dark`
+ * NO se redefine aquí a propósito: debe quedar igual en los dos temas.
+ * El tema por defecto sigue siendo oscuro (ver src/scripts/theme.ts).
+ */
+:root[data-theme="light"] {
+  --color-ink-950: #f7f4ee;
+  --color-ink-900: #f0ebe0;
+  --color-ink-800: #fffdf9;
+  --color-ink-700: #e8e1d2;
+  --color-ink-600: #d2c7b0;
+  --color-ink-500: #a99b7e;
+  --color-ink-400: #8c8069;
+  --color-ink-300: #6b6151;
+  --color-ink-200: #453e33;
+  --color-ink-100: #2c271f;
+  --color-ink-50: #1c1712;
+
+  --color-brand-300: #059669;
+  --color-brand-400: #047857;
+  --color-brand-500: #036952;
+  --color-brand-600: #024a3b;
+  --color-brand-700: #013327;
+
+  --color-accent-300: #14b8a6;
+  --color-accent-400: #0d9488;
+  --color-accent-500: #0f766e;
+  --color-accent-600: #115e59;
+  --color-accent-700: #134e4a;
+
+  --color-gold-400: #92610a;
+  --color-danger-400: #cc2340;
+  /* --color-ember-400 NO se redefine: solo se usa sobre la foto+scrim fija de
+     TeamCard (ver --color-fixed-dark arriba), nunca sobre una superficie que
+     cambie con el tema — debe quedar igual en los dos temas. */
 }
 
 @keyframes fade-in-up {
@@ -120,6 +165,22 @@
   html {
     color-scheme: dark;
     scroll-behavior: smooth;
+  }
+
+  html[data-theme="light"] {
+    color-scheme: light;
+  }
+
+  /*
+   * public/logo.png es un PNG rasterizado (letras blancas sobre transparente,
+   * ver CLAUDE.md punto 4) pensado para el fondo oscuro original — Tailwind no
+   * lo procesa, así que no hay token de color que lo cubra (misma excepción
+   * que favicon.svg/og/default.svg). En modo claro queda casi invisible sobre
+   * el fondo "Paper"; se invierte a negro con un filtro en vez de generar un
+   * segundo asset.
+   */
+  html[data-theme="light"] .site-logo {
+    filter: invert(1);
   }
 
   body {

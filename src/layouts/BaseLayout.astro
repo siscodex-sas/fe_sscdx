@@ -18,6 +18,22 @@ const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;
 <html lang={locale}>
   <head>
     <meta charset="utf-8" />
+    <script is:inline>
+      // Bloqueante a propósito: fija data-theme ANTES del primer paint para
+      // que no haya un parpadeo del tema equivocado al cargar. No puede
+      // importar src/scripts/theme.ts (un script inline no procesa
+      // imports), así que repite el mínimo indispensable — ver esa función
+      // (getStoredTheme/applyTheme) para la versión completa que sí se usa
+      // en el resto del ciclo de vida de la página.
+      (function () {
+        var theme = "dark";
+        try {
+          var stored = localStorage.getItem("siscodex:theme");
+          if (stored === "light" || stored === "dark") theme = stored;
+        } catch (e) {}
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#1a1b1e" />
     <link rel="icon" type="image/svg+xml" href={withBase("/favicon.svg")} />
@@ -34,8 +50,15 @@ const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;
 
     <script>
       import { initScrollReveal } from "@/scripts/reveal";
+      import { applyTheme, getStoredTheme, initThemePersistence } from "@/scripts/theme";
 
       document.addEventListener("astro:page-load", initScrollReveal);
+
+      // Sincroniza el meta theme-color (el atributo data-theme del <html>
+      // ya lo puso el script bloqueante de arriba) y deja enganchada la
+      // persistencia entre navegaciones con View Transitions.
+      applyTheme(getStoredTheme());
+      initThemePersistence();
     </script>
   </body>
 </html>

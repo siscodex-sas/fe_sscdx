@@ -65,6 +65,15 @@ y arregló la primera vez que se probó ahí (ver punto 7 de "Historial de decis
 `withBase()`), así que `<Button href="/contacto">` funciona solo en ambos idiomas — pero un
 `<a href="/algo">` escrito a mano necesita el envoltorio manual. Ver "Internacionalización" abajo.
 
+**Cuarta regla de oro (modo claro)**: desde que existe modo claro (ver abajo), casi todos los
+tokens de color (`ink-*`, `brand-*`, `accent-*`, `gold-400`, `danger-400`) **cambian de valor**
+según el tema — así que un componente nunca debe asumir que `ink-950` es "oscuro" o que `ink-50`
+es "claro" en un sentido absoluto, solo en el sentido relativo de "fondo de página" / "texto más
+legible". Si de verdad se necesita un color que **no** cambie con el tema (texto sobre un fill
+saturado, un scrim sobre una foto), usar `--color-fixed-dark` (`text-fixed-dark`,
+`from-fixed-dark`...) en vez de `ink-950` — es el único token que no se redefine en modo claro. Ver
+"Modo claro" abajo para el resto de la arquitectura.
+
 ## Sistema de diseño actual (estado real, septiembre 2026)
 
 - **Acento primario: verde esmeralda. Acento secundario aprobado: dorado.** `brand-500 #10b981` /
@@ -136,6 +145,63 @@ sin tabla de equivalencias de slugs). Usa el routing i18n nativo de Astro (`i18n
   alternates dentro del sitemap (solo en el `<head>` de cada página vía `SEO.astro`), que es
   suficiente para Google/Bing.
 - **Ver punto 21** de "Historial de decisiones" para el detalle completo de cómo se implementó.
+
+## Modo claro
+
+El sitio nació solo-oscuro (ver "Fondo: gris carbón" arriba); el modo claro se agregó después como
+alternativa **opcional**, con el oscuro como tema por defecto — no auto-detecta
+`prefers-color-scheme`, respeta lo que el visitante elija con la pastilla sol/luna del Navbar (o
+oscuro, la primera vez). Paleta aprobada: dirección "Paper" (neutro cálido, no blanco/gris frío
+puro) de una exploración con 3 direcciones + 5 tratamientos de ícono en un Artifact — ver punto 22.
+
+- **Cómo funciona técnicamente**: los MISMOS tokens de `@theme` (`ink-*`, `brand-*`, `accent-*`,
+  `gold-400`, `danger-400`) se redefinen bajo `:root[data-theme="light"]` en `global.css` — como
+  toda la app ya consume estos tokens vía clases de Tailwind (que a su vez usan `var(--color-x)`),
+  cambiar de tema es *solo* cambiar el atributo `data-theme` de `<html>`, sin tocar ningún
+  componente. `ember-400` es la única excepción real que **no** se redefine (ver el punto siguiente).
+- **`--color-fixed-dark`** (nuevo, en `@theme`, nunca redefinido bajo `[data-theme="light"]`): para
+  los pocos lugares donde el color debe quedarse oscuro sin importar el tema, porque el contraste
+  que protege no depende del tema de la página — el texto del botón primario sobre `bg-brand-400`
+  (`Button.astro`), y el scrim + nombre sobre la foto en la cara frontal de `TeamCard`. Si se
+  encuentra otro `text-ink-950`/`bg-ink-950` que en realidad significaba "quiero que esto se vea
+  oscuro siempre", es candidato a este token, no a `ink-950` (que ahora sí cambia con el tema).
+- **`TeamCard`**: la cara trasera (`bg-ink-900`, sin foto) sí invierte normal — pero sus botones de
+  redes sociales usaban `bg-white/5 text-white` a mano, que se veían invisibles sobre un fondo claro;
+  se cambiaron a `bg-ink-50/5 text-ink-50` (mismo patrón que el resto del sitio: el texto "más
+  legible" es `ink-50`, sea cual sea su valor en el tema activo). El label de rol de esa misma cara
+  pasó de `ember-400` a `gold-400` por la misma razón (`ember-400` no invierte, se quedaría naranja
+  claro sobre fondo claro con mal contraste; `gold-400` si invierte).
+- **`src/scripts/theme.ts`**: `getStoredTheme()`/`setStoredTheme()` (persistencia en
+  `localStorage`, clave `siscodex:theme`), `applyTheme()` (pone `data-theme` en `<html>` + actualiza
+  `<meta name="theme-color">`, que no puede leer variables CSS — tocar a mano si cambia la paleta,
+  igual que las otras excepciones de la "Regla de oro"), e `initThemePersistence()`.
+- **Sin parpadeo en la carga inicial**: `BaseLayout.astro` tiene un `<script is:inline>` bloqueante
+  al principio del `<head>` (antes de cualquier CSS) que lee `localStorage` y fija `data-theme`
+  antes del primer paint — no puede importar `theme.ts` (un script inline no procesa imports), así
+  que repite esa lógica mínima a mano.
+- **Sin parpadeo entre navegaciones (View Transitions)**: como `data-theme` solo existe en el
+  cliente, `swapRootAttributes()` lo borraría en cada navegación con `<ClientRouter />` (la página
+  nueva no lo trae). `initThemePersistence()` lo reaplica dentro de `astro:before-swap`,
+  envolviendo el `swap()` por defecto — igual que `LanguageSwitcher.astro` con el scroll (ver punto
+  14): si se hiciera en `astro:after-swap` (después de la foto para el crossfade), se alcanzaría a
+  ver un parpadeo del tema equivocado. Mismo patrón, mismo motivo, dos usos distintos.
+- **`ThemeToggle.astro`** (junto a `LanguageSwitcher` en el Navbar): un solo `<button role="switch">`
+  — todo el pill es clickeable (no hace falta acertarle al ícono de sol/luna), con `cursor-pointer`
+  y un thumb (`<span>` absoluto) que se desliza con `translate-x-7` + transición de 300ms entre las
+  dos posiciones; los íconos sol/luna son decorativos (`aria-hidden`), colorean vía
+  `group-data-[state=...]` según el `data-state` del botón padre. `aria-label`/`aria-checked` se
+  recalculan en cada click (`theme.switchToLight`/`theme.switchToDark` en `ui.ts`, frase de acción
+  — "a qué cambia", no "qué es"). Sí necesita JS (a diferencia de `LanguageSwitcher`, esto no navega
+  a ninguna URL, solo cambia un atributo). Delegación de clics sobre `document`, mismo patrón que el
+  resto del sitio.
+- **`public/logo.png` en modo claro**: es un PNG rasterizado con letras casi blancas sobre
+  transparente (ver punto 4 de "Historial de decisiones") pensado para el fondo oscuro original —
+  Tailwind no lo procesa, así que ningún token de color lo cubre (misma familia de excepción que
+  `favicon.svg`/`og/default.svg` en la "Regla de oro"). Sobre el fondo "Paper" claro quedaba casi
+  invisible. Se resolvió con un filtro CSS en vez de generar un segundo asset: clase `site-logo` en
+  el `<img>` (Navbar y Footer) + `html[data-theme="light"] .site-logo { filter: invert(1); }` en
+  `global.css` — invierte el blanco a negro solo en modo claro. Si se usa el logo en un lugar nuevo,
+  aplicarle la misma clase `site-logo`.
 
 ## Historial de decisiones (para no repetir trabajo ni confundirse con git blame)
 
@@ -265,6 +331,27 @@ sin tabla de equivalencias de slugs). Usa el routing i18n nativo de Astro (`i18n
     script de validación. Decisión explícita del cliente: slugs iguales bajo `/en/` (no
     `/en/about-us`), para no mantener una tabla de equivalencias — más simple y menos propenso a
     bugs en el selector de idioma.
+22. **Modo claro ("Paper")**: el sitio nació solo-oscuro; el cliente pidió agregar modo claro más
+    una pastilla sol/luna junto al selector de idioma. Antes de tocar código se generó un Artifact
+    (canvas de diseño) con 3 direcciones de paleta completas (secciones reales re-pintadas, no
+    swatches abstractos) y 5 tratamientos de ícono, todas ancladas a los tokens reales del modo
+    oscuro — mismo patrón que las exploraciones anteriores de este proyecto (Aurora/Canopy, el
+    acento dorado). El cliente eligió la dirección "Paper" (neutro cálido, no blanco/gris frío
+    puro) y el ícono segmentado sol/luna (ambos siempre visibles, el activo resaltado) como
+    referencia visual — al implementarlo se afinó a un switch deslizante de un solo botón (todo el
+    pill clickeable, thumb animado) en vez de dos botones independientes, por usabilidad. Al pasar la
+    paleta del mockup a los tokens reales apareció un problema que el mockup no tenía: varios
+    lugares del código usaban `ink-950`/`text-white` asumiendo que siempre sería oscuro (el texto
+    del botón primario sobre el fill verde, el scrim + nombre sobre la foto de `TeamCard`) — invertir
+    `ink-950` a un valor claro los habría roto (texto invisible). Se resolvió con
+    `--color-fixed-dark`, un token nuevo que nunca cambia de tema, ver "Modo claro" arriba. Lección
+    para la próxima exploración de tema/color: un mockup aislado no revela estos casos — hay que
+    grepear `ink-950`/`text-white`/`bg-white` en el código real antes de dar por buena una
+    inversión de escala completa. Ese mismo grep tampoco atrapa un caso distinto: `public/logo.png`
+    es un PNG con letras blancas, no un token de color, así que quedaba invisible en modo claro sin
+    que ninguna búsqueda de texto lo detectara — se resolvió con un filtro `invert(1)` condicionado a
+    `[data-theme="light"]` (ver "Modo claro" arriba). Lección adicional: además de grepear tokens,
+    revisar también los assets rasterizados (`public/*.png`) pensados para un solo fondo.
 
 ## Pendientes conocidos antes de un lanzamiento real
 
@@ -288,6 +375,12 @@ sin tabla de equivalencias de slugs). Usa el routing i18n nativo de Astro (`i18n
   bajo `src/pages/en/`) las escribió Claude — funcionalmente completas y consistentes, pero no las
   ha revisado un hablante nativo de inglés. Antes de un lanzamiento real, vale la pena una pasada
   de revisión humana, especialmente en el copy de marketing (Hero, WhyUs, especialidades).
+- **El modo claro se implementó y compila sin errores, pero Claude no lo vio en un navegador real**
+  (no hay herramienta de automatización de navegador en este entorno) — los valores de contraste
+  se calcularon a mano, no se verificaron con una herramienta real. Antes de darlo por terminado,
+  alguien debería recorrer el sitio completo en modo claro (todas las páginas, ambos idiomas,
+  mobile) y revisar especialmente: la tarjeta de equipo (flip 3D), los blobs decorativos de fondo,
+  y el contraste de `gold-400`/`ember-400` en los distintos fondos donde aparecen.
 
 ## Deployment
 
