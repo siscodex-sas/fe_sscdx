@@ -1,0 +1,80 @@
+---
+import { useTranslations } from "@/i18n/utils";
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/types";
+
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+
+const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;
+const t = useTranslations(locale);
+---
+
+<button
+  type="button"
+  role="switch"
+  aria-checked="true"
+  data-theme-toggle
+  data-state="dark"
+  aria-label={t("theme.switchToLight")}
+  class:list={[
+    "group relative inline-flex h-9 w-16 cursor-pointer items-center rounded-full border border-gold-400/40 p-1 transition-colors duration-200 hover:border-gold-400/70 hover:bg-gold-400/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-400",
+    className,
+  ]}
+>
+  <span
+    aria-hidden="true"
+    class="pointer-events-none absolute top-1 left-1 size-7 rounded-full bg-gold-400/15 ring-1 ring-gold-400/30 transition-transform duration-300 ease-out group-data-[state=dark]:translate-x-7"
+  ></span>
+  <span class="relative z-10 flex h-full w-full items-center">
+    <span
+      aria-hidden="true"
+      class="flex flex-1 items-center justify-center text-ink-400 transition-colors duration-200 group-data-[state=light]:text-gold-400"
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="4"></circle>
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+      </svg>
+    </span>
+    <span
+      aria-hidden="true"
+      class="flex flex-1 items-center justify-center text-ink-400 transition-colors duration-200 group-data-[state=dark]:text-gold-400"
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"></path>
+      </svg>
+    </span>
+  </span>
+</button>
+
+<script>
+  import { applyTheme, getStoredTheme, setStoredTheme, type Theme } from "@/scripts/theme";
+  import { useTranslations } from "@/i18n/utils";
+  import { DEFAULT_LOCALE, type Locale } from "@/i18n/types";
+
+  function syncToggles(theme: Theme) {
+    const locale = (document.documentElement.lang as Locale) || DEFAULT_LOCALE;
+    const t = useTranslations(locale);
+    document.querySelectorAll<HTMLButtonElement>("[data-theme-toggle]").forEach((toggle) => {
+      toggle.dataset.state = theme;
+      toggle.setAttribute("aria-checked", String(theme === "dark"));
+      toggle.setAttribute("aria-label", t(theme === "dark" ? "theme.switchToLight" : "theme.switchToDark"));
+    });
+  }
+
+  document.addEventListener("click", (event) => {
+    const target = event.target;
+    const toggle = target instanceof Element ? target.closest<HTMLButtonElement>("[data-theme-toggle]") : null;
+    if (!toggle) return;
+
+    const next: Theme = toggle.dataset.state === "dark" ? "light" : "dark";
+    setStoredTheme(next);
+    applyTheme(next);
+    syncToggles(next);
+  });
+
+  document.addEventListener("astro:page-load", () => syncToggles(getStoredTheme()));
+  syncToggles(getStoredTheme());
+</script>

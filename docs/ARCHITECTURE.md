@@ -289,6 +289,17 @@ por qué. Sigue el mismo espíritu Vercel/Linear/Stripe: superficies oscuras sin
 calidez, acentos saturados usados con moderación (nunca como color de fondo grande) y
 gradientes sutiles solo en elementos de foco (botón primario, blobs de fondo del Hero).
 
+**Modo claro**: los mismos tokens de arriba se redefinen bajo `:root[data-theme="light"]` en
+`global.css` (paleta "Paper", neutro cálido) — como toda la app ya consume estos tokens vía clases
+de Tailwind, cambiar de tema es solo cambiar el atributo `data-theme` de `<html>`, sin tocar
+componentes. La excepción es `--color-fixed-dark`, un token que **no** se redefine (siempre
+`#1a1b1e`) para los pocos lugares donde el contraste no debe depender del tema — texto sobre un
+fill de color saturado, un scrim sobre una fotografía. Oscuro sigue siendo el tema por defecto; el
+claro es una preferencia explícita del visitante, persistida en `localStorage` y aplicada sin
+parpadeo (script bloqueante en `<head>` para la carga inicial, `astro:before-swap` para las
+navegaciones con View Transitions). Ver "Modo claro" en `CLAUDE.md` para la arquitectura completa
+y el punto 22 de su historial de decisiones para el proceso de diseño.
+
 ### 3.2 Tipografía
 
 | Uso | Familia | Variable Tailwind |
