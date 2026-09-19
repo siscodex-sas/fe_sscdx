@@ -74,9 +74,11 @@ const currentPath = new URL(Astro.request.url).pathname;
     </div>
 
     <div class="flex items-center gap-3">
-      <ThemeToggle class="hidden md:inline-flex" />
-      <LanguageSwitcher pagePath={pagePath} class="hidden md:inline-flex" />
-      <Button href="/contacto" size="md" class="hidden md:inline-flex">{t("nav.cta")}</Button>
+      <div class="hidden items-center gap-3 md:flex">
+        <ThemeToggle />
+        <LanguageSwitcher pagePath={pagePath} />
+        <Button href="/contacto" size="md" class="whitespace-nowrap">{t("nav.cta")}</Button>
+      </div>
       <button
         type="button"
         aria-label={t("nav.aria.menu")}
@@ -119,7 +121,7 @@ const currentPath = new URL(Astro.request.url).pathname;
       <div class="mt-2 flex items-center gap-3">
         <ThemeToggle />
         <LanguageSwitcher pagePath={pagePath} />
-        <Button href="/contacto" size="md" class="flex-1 justify-center">{t("nav.cta")}</Button>
+        <Button href="/contacto" size="md" class="flex-1 justify-center whitespace-nowrap">{t("nav.cta")}</Button>
       </div>
     </div>
   </div>
