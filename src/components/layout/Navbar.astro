@@ -32,7 +32,12 @@ const currentPath = new URL(Astro.request.url).pathname;
       <img src={withBase("/logo.png")} alt="Siscodex" width="182" height="20" class="site-logo h-5 w-auto sm:h-6" />
     </a>
 
-    <div class="hidden items-center gap-8 md:flex">
+    <div class="flex items-center gap-2 md:hidden">
+      <ThemeToggle />
+      <LanguageSwitcher pagePath={pagePath} />
+    </div>
+
+    <div class="hidden items-center gap-8 xl:flex">
       {
         mainNavAnchors.map((link) => {
           const anchorPath = withBase(localizedHref(link.href.split("#")[0] || "/", locale));
@@ -74,10 +79,14 @@ const currentPath = new URL(Astro.request.url).pathname;
     </div>
 
     <div class="flex items-center gap-3">
-      <div class="hidden items-center gap-3 md:flex">
+      <div class="hidden items-center gap-3 xl:flex">
         <ThemeToggle />
         <LanguageSwitcher pagePath={pagePath} />
         <Button href="/contacto" size="md" class="whitespace-nowrap">{t("nav.cta")}</Button>
+      </div>
+      <div class="hidden items-center gap-2 md:flex xl:hidden">
+        <ThemeToggle />
+        <LanguageSwitcher pagePath={pagePath} />
       </div>
       <button
         type="button"
@@ -85,7 +94,7 @@ const currentPath = new URL(Astro.request.url).pathname;
         aria-expanded="false"
         aria-controls="mobile-menu"
         data-menu-toggle
-        class="inline-flex size-10 items-center justify-center rounded-md text-ink-100 md:hidden"
+        class="inline-flex size-10 items-center justify-center rounded-md text-ink-100 xl:hidden"
       >
         <Icon name="lucide:menu" class="size-6" data-menu-icon-open />
         <Icon name="lucide:x" class="hidden size-6" data-menu-icon-close />
@@ -93,7 +102,7 @@ const currentPath = new URL(Astro.request.url).pathname;
     </div>
   </nav>
 
-  <div id="mobile-menu" class="hidden border-t border-ink-700 bg-ink-950/98 backdrop-blur-xl md:hidden">
+  <div id="mobile-menu" class="hidden border-t border-ink-700 bg-ink-950/98 backdrop-blur-xl xl:hidden">
     <div class="flex flex-col gap-1 px-4 py-4">
       {
         mainNavAnchors.map((link) => (
@@ -118,11 +127,7 @@ const currentPath = new URL(Astro.request.url).pathname;
           </a>
         ))
       }
-      <div class="mt-2 flex items-center gap-3">
-        <ThemeToggle />
-        <LanguageSwitcher pagePath={pagePath} />
-        <Button href="/contacto" size="md" class="flex-1 justify-center whitespace-nowrap">{t("nav.cta")}</Button>
-      </div>
+      <Button href="/contacto" size="md" class="mt-2 w-full justify-center whitespace-nowrap">{t("nav.cta")}</Button>
     </div>
   </div>
 </header>
