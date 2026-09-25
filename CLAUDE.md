@@ -55,9 +55,11 @@ si cambia la paleta, esos tres hay que tocarlos a mano.
 `/logo.png`, `/favicon.svg`) **debe** pasar por `withBase()` de `src/utils/url.ts`. `Button.astro`
 ya lo aplica internamente, así que todo lo que use `<Button href="...">` está cubierto gratis —
 pero un `<a href="/algo">` o `<img src="/algo">` escrito a mano, no. Si no se envuelve, el link
-funciona en local y en producción con dominio propio (`base: "/"`), pero se rompe apenas alguien
-prueba en un GitHub Pages de proyecto (`base: "/fe_sscdx"`) — es exactamente el bug que se encontró
-y arregló la primera vez que se probó ahí (ver punto 7 de "Historial de decisiones").
+funciona en local y en producción (`base: "/"` en Cloudflare Pages, siempre), pero se rompe apenas
+alguien lo prueba bajo una subruta (un GitHub Pages de proyecto, `base: "/fe_sscdx"`) — es
+exactamente el bug que se encontró y arregló la primera vez que el sitio vivía ahí (ver punto 7 de
+"Historial de decisiones"). Hoy en producción no hay subruta, pero la regla se mantiene por
+portabilidad: no cuesta nada y evita repetir ese bug si el sitio vuelve a vivir bajo un subpath.
 
 **Tercera regla de oro (i18n)**: si el href es de una *página* (no un asset como `/logo.png`),
 `withBase()` solo no alcanza — hay que componerlo con `localizedHref()` de `src/i18n/utils.ts`:
@@ -135,8 +137,9 @@ sin tabla de equivalencias de slugs). Usa el routing i18n nativo de Astro (`i18n
   `src/i18n/utils.ts`. Al no tener estado de cliente, no hay riesgo de bug de View Transitions
   (contraste con el bug del punto 14 de abajo). Recibe `pagePath` como prop desde `BaseLayout` →
   `Navbar` (la ruta canónica de la página, la misma que ya se pasaba a `SEO.astro`).
-- **`404.astro` no tiene versión `/en/`** a propósito: GitHub Pages sirve un único `404.html` en la
-  raíz del sitio para cualquier ruta rota, sin importar el idioma de la URL — un `en/404.astro`
+- **`404.astro` no tiene versión `/en/`** a propósito: en un sitio estático sin servidor por
+  request, el hosting sirve un único `404.html` en la raíz para cualquier ruta rota, sin importar
+  el idioma de la URL (cierto tanto en GitHub Pages como en Cloudflare Pages) — un `en/404.astro`
   sería inalcanzable en producción.
 - **SEO**: `SEO.astro` agrega `<link rel="alternate" hreflang="es|en|x-default">` (vía
   `alternateUrls()`) y `og:locale` dinámico (`es_ES`/`en_US`); `BaseLayout.astro` pone
@@ -289,10 +292,12 @@ puro) de una exploración con 3 direcciones + 5 tratamientos de ícono en un Art
     en dos grupos (`mainNavAnchors`/`mainNavPages` en `navigation.ts`): **Inicio, Servicios,
     Soluciones** son anclas al home (`/#top`, `/#servicios`, `/#soluciones`); **Recursos,
     Tecnología, Nosotros** siguen siendo páginas propias. Un reviewer de Copilot marcó que borrar
-    las páginas sin redirect rompía bookmarks/links indexados — se agregó `redirects` en
-    `astro.config.mjs` (`/servicios` → `/#servicios`, `/soluciones` → `/#soluciones`), que en
-    `output: "static"` genera páginas de meta-refresh, no 301 reales (GitHub Pages no sirve
-    redirects HTTP). Si se borra otra página con URL ya pública, aplicar el mismo patrón.
+    las páginas sin redirect rompía bookmarks/links indexados — se agregó un redirect
+    (`/servicios` → `/#servicios`, `/soluciones` → `/#soluciones`). Al principio vivía como
+    `redirects` en `astro.config.mjs`, generando páginas de meta-refresh (no 301 reales, porque
+    GitHub Pages no servía redirects HTTP); con la migración a Cloudflare Pages (ver punto 23) se
+    reemplazó por `public/_redirects` con 301 reales — si se borra otra página con URL ya pública,
+    agregar el redirect ahí, no reintroducir el truco de meta-refresh.
 17. **`ServiceCard` pasó de link a tarjeta con flip 3D**: clic para girar y mostrar el checklist
     completo en la cara trasera, en vez de navegar a un ancla de `/servicios#slug` (que ya no
     existe). El botón expone `aria-expanded` y cada cara alterna `aria-hidden` — antes ambas caras
@@ -352,14 +357,25 @@ puro) de una exploración con 3 direcciones + 5 tratamientos de ícono en un Art
     que ninguna búsqueda de texto lo detectara — se resolvió con un filtro `invert(1)` condicionado a
     `[data-theme="light"]` (ver "Modo claro" arriba). Lección adicional: además de grepear tokens,
     revisar también los assets rasterizados (`public/*.png`) pensados para un solo fondo.
+23. **Migración de GitHub Pages a Cloudflare Pages**: surgió de una auditoría de seguridad/caché
+    pedida por el cliente — GitHub Pages no permite headers HTTP custom (sin `Content-Security-Policy`
+    real, sin `frame-ancestors`, sin `Cache-Control` propio para assets con hash) ni redirects HTTP
+    reales (de ahí el truco de meta-refresh del punto 16). Antes de la migración también se transfirió
+    la organización de GitHub de `siscodex` a `siscodex-sas` — la cuenta que hizo el trabajo quedó
+    como `member` sin acceso de escritura en la org nueva (el rol no se hereda en una transferencia),
+    hubo que promoverla a `Owner`/`admin` manualmente en Settings → People antes de poder seguir
+    pusheando. Cloudflare Pages se conectó directo al repo (auto-deploy en cada push a `master`, sin
+    pasar por GitHub Actions) — el dominio raíz (`siscodex.com`) requirió mover los nameservers del
+    dominio de Squarespace a Cloudflare (un CNAME normal no alcanza para el apex sin que Cloudflare
+    controle la zona completa); `www.siscodex.com` se agregó como dominio adicional del mismo
+    proyecto con una Redirect Rule 301 hacia el apex, para no duplicar contenido de cara a SEO.
+    Se decomisionó GitHub Pages por completo (`deploy.yml`, `public/CNAME`, Pages deshabilitado en
+    Settings del repo) en vez de dejarlo como fallback inerte, para que no quede corriendo CI sin
+    sentido ni confunda a alguien que lo vea "en verde" pensando que ahí está el sitio real. Ver
+    "Deployment" arriba para el estado técnico completo.
 
 ## Pendientes conocidos antes de un lanzamiento real
 
-- **⚠️ `PUBLIC_BASE_PATH` en `.github/workflows/deploy.yml` está en `/fe_sscdx` temporalmente**
-  (repo público, probando en `siscodex.github.io/fe_sscdx` sin DNS todavía). Cuando el DNS de
-  `siscodex.com` apunte a GitHub Pages y el dominio quede verificado en Settings → Pages, hay que
-  volver a poner `PUBLIC_BASE_PATH: /` — si no, el sitio en el dominio real quedará sin estilos
-  (mismo síntoma que se corrigió acá: CSS/JS apuntando a la ruta equivocada).
 - `public/og/default.svg` es un placeholder generado por código (gradiente + logo + texto).
   Twitter/X no renderiza SVG en `og:image` — sustituir por un PNG/JPG 1200×630 real antes de
   publicar (ver `docs/ARCHITECTURE.md` §5.4).
@@ -384,9 +400,21 @@ puro) de una exploración con 3 direcciones + 5 tratamientos de ícono en un Art
 
 ## Deployment
 
-GitHub Pages ya configurado (`.github/workflows/deploy.yml`, `public/CNAME` → siscodex.com).
-Vercel/Netlify/AWS S3+CloudFront documentados paso a paso en `docs/ARCHITECTURE.md` §7 —
-`netlify.toml` ya está en la raíz para Netlify.
+**Cloudflare Pages**, conectado directo al repo (`master` → producción, auto-deploy en cada push,
+sin workflow de GitHub Actions de por medio). `PUBLIC_BASE_PATH` queda vacío/`/` ahí siempre — ya
+no existe el escenario de subruta que sí aplicaba a GitHub Pages de proyecto. Dominio: `siscodex.com`
+(canónico) con `www.siscodex.com` redirigiendo 301 al apex vía Redirect Rule de Cloudflare (fuera
+del repo, configurado en su dashboard). `public/_headers` (CSP real con `frame-ancestors`, caché
+inmutable para `/_astro/*`, resto de headers de seguridad) y `public/_redirects` (redirects 301
+reales de `/servicios`/`/soluciones`) — Cloudflare Pages los sirve tal cual, mismo formato que
+Netlify. Ver punto 23 de "Historial de decisiones" para el porqué de la migración.
+
+GitHub Pages **ya no se usa** (decomisionado: se borró `.github/workflows/deploy.yml`,
+`public/CNAME`, y se deshabilitó Pages en la configuración del repo) — si aparece cualquiera de
+esos tres de nuevo en una rama vieja o un merge, es un regreso accidental, no una reintroducción
+intencional. Vercel/AWS S3+CloudFront siguen documentados paso a paso en `docs/ARCHITECTURE.md`
+§7 como alternativas; `netlify.toml` sigue en la raíz pero es documentación de una opción no usada,
+no el estado real.
 
 ## Convenciones de commits / trabajo con el usuario
 
