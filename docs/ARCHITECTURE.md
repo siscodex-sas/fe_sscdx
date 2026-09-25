@@ -30,9 +30,8 @@ de cada decisión, no solo el "qué".
 
 ```
 fe_sscdx/
-├── .github/workflows/        # CI (PRs) y CD (deploy a GitHub Pages)
-│   ├── ci.yml
-│   └── deploy.yml
+├── .github/workflows/        # CI (type-check + build en cada PR) — el deploy real lo hace
+│   └── ci.yml                # Cloudflare Pages directo desde el repo, sin Actions de por medio
 ├── docs/
 │   └── ARCHITECTURE.md       # Este documento
 ├── public/                   # Assets servidos tal cual, sin procesar por Vite
@@ -41,7 +40,8 @@ fe_sscdx/
 │   ├── team/                  # Fotos reales de liderazgo (TeamSection/TeamCard en /nosotros)
 │   ├── og/default.svg        # Placeholder de Open Graph (ver §5.4)
 │   ├── robots.txt
-│   └── CNAME                 # Dominio personalizado para GitHub Pages
+│   ├── _headers               # Headers HTTP reales (CSP, caché) — Cloudflare Pages los sirve tal cual
+│   └── _redirects             # Redirects 301 reales (/servicios, /soluciones) — mismo mecanismo
 ├── src/
 │   ├── components/
 │   │   ├── layout/           # Navbar, Footer — presentes en todas las páginas
@@ -70,7 +70,7 @@ fe_sscdx/
 │   │   ├── recursos/          # Subpáginas de documentación para clientes (noindex)
 │   │   ├── legal/              # Privacidad y términos
 │   │   ├── en/                 # Espejo en inglés de cada página de arriba, mismos slugs (ver §9)
-│   │   └── 404.astro           # Sin versión /en/ — GitHub Pages sirve un solo 404.html, ver §9
+│   │   └── 404.astro           # Sin versión /en/ — el hosting sirve un solo 404.html, ver §9
 │   ├── scripts/                # JS de cliente compartido (no components)
 │   │   └── reveal.ts           # Scroll-reveal con la librería "motion"
 │   ├── styles/
@@ -210,20 +210,23 @@ Puntos clave de la configuración (ver el archivo real en la raíz del proyecto)
 - **`site: "https://siscodex.com"`** — usado por `@astrojs/sitemap` y por los helpers de SEO para
   generar URLs canónicas absolutas, independientemente de dónde se compile el sitio.
 - **`base: process.env.PUBLIC_BASE_PATH ?? "/"`** — controlado por variable de entorno, no
-  hardcodeado. Con dominio propio (siscodex.com, Vercel, Netlify, CloudFront) siempre es `"/"`.
-  Solo cambia a `"/nombre-del-repo"` si se despliega en un GitHub Pages de *proyecto* sin dominio
-  personalizado — ver [§7.1](#71-github-pages).
+  hardcodeado. En producción (Cloudflare Pages, con dominio propio) siempre es `"/"`; la variable
+  existe por portabilidad, para el escenario de un GitHub Pages de *proyecto* sin dominio propio
+  (`"/nombre-del-repo"`) — ver [§7.1](#71-cloudflare-pages).
 - **`output: "static"`** — no hay SSR; todo el sitio se pre-renderiza. Es compatible tal cual con
-  cualquiera de las cuatro plataformas de destino (GitHub Pages, Vercel, Netlify, S3+CloudFront).
+  cualquiera de las plataformas de destino (Cloudflare Pages, Vercel, Netlify, S3+CloudFront,
+  GitHub Pages).
 - **`prefetch`** — precarga las páginas enlazadas cuando entran al viewport, para que la
   navegación se sienta instantánea (patrón usado por Vercel/Linear).
 - **`vite.plugins: [tailwindcss()]`** — integra Tailwind v4 directamente en Vite, sin el paquete
   `@astrojs/tailwind` (que es la vía legacy pensada para Tailwind v3).
-- **`redirects`** — `/servicios` y `/soluciones` dejaron de ser páginas propias (su contenido se
-  fusionó en el home, ver [§4](#4-contenido-y-páginas)); en vez de dejarlas devolver 404, redirigen
-  a `/#servicios` y `/#soluciones`. Con `output: "static"` Astro genera esto como una página HTML
-  con `<meta http-equiv="refresh">` en build time (no un 301 real vía servidor) — es la única opción
-  compatible con GitHub Pages, que no sirve redirects HTTP configurables.
+- **Redirects de `/servicios` y `/soluciones`** — dejaron de ser páginas propias (su contenido se
+  fusionó en el home, ver [§4](#4-contenido-y-páginas)); en vez de devolver 404, redirigen a
+  `/#servicios` y `/#soluciones`. Viven en `public/_redirects` (301 real, servido por Cloudflare
+  Pages) — no en `astro.config.mjs`. Antes vivían ahí como `redirects` de Astro, generando una
+  página HTML con `<meta http-equiv="refresh">` en build time, porque era la única opción
+  compatible con GitHub Pages (no servía redirects HTTP configurables); se simplificó al migrar el
+  hosting (ver [§7.1](#71-cloudflare-pages)).
 
 ### 2.2 `tsconfig.json`
 
@@ -389,7 +392,7 @@ páginas propias con ruta.
 
 Cada una de estas rutas existe también en inglés bajo `/en/` con el mismo slug (`/en/nosotros`,
 `/en/contacto`...) — ver [§9](#9-internacionalización-i18n). Excepción: `/404` no tiene par en
-`/en/` (GitHub Pages sirve un único `404.html`, sin importar el idioma de la URL rota).
+`/en/` (el hosting sirve un único `404.html`, sin importar el idioma de la URL rota).
 
 ### 4.1 Tono de contenido
 
@@ -555,21 +558,52 @@ genérico que el brief pedía evitar.
 El sitio compila a HTML/CSS/JS 100% estático (`output: "static"`), por lo que **cualquier** CDN o
 host estático funciona sin adaptador de Astro. Solo cambia el mecanismo de build/publish.
 
-### 7.1 GitHub Pages
+### 7.1 Cloudflare Pages (actual)
 
-Configurado y funcional out-of-the-box vía `.github/workflows/deploy.yml`:
+Conectado directo al repo — sin workflow de GitHub Actions de por medio, Cloudflare hace su propio
+build en cada push:
 
-1. En GitHub → Settings → Pages, seleccionar **"GitHub Actions"** como fuente.
-2. Con dominio propio (`siscodex.com`, ya declarado en `public/CNAME`): no tocar nada, `base`
-   permanece en `/`. Apuntar el DNS del dominio a GitHub Pages (registro `A`/`ALIAS` según la
-   documentación de GitHub) y añadir el dominio en Settings → Pages → Custom domain.
-3. Sin dominio propio (GitHub Pages de proyecto, `usuario.github.io/fe_sscdx`): eliminar
-   `public/CNAME` y definir `PUBLIC_BASE_PATH: /fe_sscdx` en el step "Type-check y build" del
-   workflow.
-4. Cada push a `master` (la rama por defecto de este repo) dispara el build y despliega
-   automáticamente.
+1. Proyecto de Cloudflare Pages (Workers & Pages → `fe-sscdx`) vinculado a `siscodex-sas/fe_sscdx`,
+   rama de producción `master`. Build command `npm run build`, output directory `dist`.
+2. Variable de entorno `PUBLIC_BASE_PATH` vacía (o sin definir) — Cloudflare Pages siempre sirve
+   desde la raíz del dominio, nunca desde una subruta.
+3. Dominios personalizados del proyecto: `siscodex.com` (apex, canónico) y `www.siscodex.com`. El
+   apex requiere que la zona DNS del dominio esté delegada a los nameservers de Cloudflare (un
+   CNAME normal en el registrador no alcanza para el dominio raíz). `www` redirige 301 al apex vía
+   una Redirect Rule configurada en el dashboard de Cloudflare (fuera del repo) — evita contenido
+   duplicado de cara a SEO.
+4. `public/_headers` y `public/_redirects` (mismo formato que Netlify, Cloudflare Pages los
+   soporta tal cual): headers de seguridad reales (`Content-Security-Policy` con `frame-ancestors`,
+   `Strict-Transport-Security`, `Permissions-Policy`, `X-Frame-Options`, `Referrer-Policy`,
+   `X-Content-Type-Options`) y caché inmutable (`max-age=31536000, immutable`) para `/_astro/*`
+   (los assets llevan hash de contenido en el nombre, son seguros de cachear para siempre). El
+   `<head>` de `BaseLayout.astro` ya no lleva `<meta>` de CSP/referrer — un header HTTP real es
+   estrictamente mejor (aplica antes de parsear el HTML, y sí soporta `frame-ancestors`, que por
+   meta tag el navegador ignora).
+5. `/servicios` y `/soluciones` redirigen 301 real vía `public/_redirects`, no como página de
+   meta-refresh (ver [§2.1](#21-astroconfigmjs)).
 
-### 7.2 Vercel
+Ver `CLAUDE.md` → "Historial de decisiones" (punto 23) para el porqué de la migración desde
+GitHub Pages y los detalles operativos de cómo se hizo.
+
+### 7.2 GitHub Pages (documentado, no usado actualmente)
+
+Se usó hasta la migración a Cloudflare Pages; quedó decomisionado (`.github/workflows/deploy.yml`
+y `public/CNAME` se borraron, Pages se deshabilitó en Settings del repo) porque no soporta headers
+HTTP custom ni redirects HTTP reales — ver §7.1. Si algún día hace falta volver a esta opción:
+
+1. Recrear un workflow de GitHub Actions con `actions/upload-pages-artifact` +
+   `actions/deploy-pages` (build: `npm run build`), y en GitHub → Settings → Pages seleccionar
+   **"GitHub Actions"** como fuente.
+2. Con dominio propio: recrear `public/CNAME` con el dominio, `base` permanece en `/`. Apuntar el
+   DNS del dominio a GitHub Pages y añadirlo en Settings → Pages → Custom domain.
+3. Sin dominio propio (GitHub Pages de proyecto, `usuario.github.io/fe_sscdx`): no crear `CNAME` y
+   definir `PUBLIC_BASE_PATH: /fe_sscdx` en el step de build del workflow.
+4. Los headers de seguridad y los redirects de `public/_headers`/`public/_redirects` **no
+   funcionan en GitHub Pages** — habría que volver al mecanismo de `<meta>` CSP (ver git history de
+   `BaseLayout.astro` antes de la migración) y a `redirects` de meta-refresh en `astro.config.mjs`.
+
+### 7.3 Vercel
 
 1. Importar el repositorio en Vercel — el framework preset "Astro" se detecta automáticamente
    (build command `npm run build`, output `dist`). No requiere configuración adicional.
@@ -578,14 +612,16 @@ Configurado y funcional out-of-the-box vía `.github/workflows/deploy.yml`:
 3. Cada push a la rama configurada genera un deployment; los PRs obtienen preview URLs
    automáticas.
 
-### 7.3 Netlify
+### 7.4 Netlify
 
 1. `netlify.toml` en la raíz ya define `command = "npm run build"` y `publish = "dist"` — importar
-   el repo en Netlify y desplegar sin configuración manual.
+   el repo en Netlify y desplegar sin configuración manual. `public/_headers` y
+   `public/_redirects` (ver §7.1) funcionan igual aquí — es el formato nativo de Netlify, Cloudflare
+   Pages lo adoptó compatible.
 2. Variables de entorno (si aplica) se definen en Site settings → Environment variables, mismas
    claves que en `.env.example`.
 
-### 7.4 AWS (S3 + CloudFront)
+### 7.5 AWS (S3 + CloudFront)
 
 1. `npm run build` genera `dist/`.
 2. Subir el contenido de `dist/` a un bucket S3 configurado para hosting estático (o como origen
@@ -595,12 +631,12 @@ Configurado y funcional out-of-the-box vía `.github/workflows/deploy.yml`:
    automáticamente a partir de `src/pages/404.astro`).
 4. Certificado TLS del dominio vía ACM (región `us-east-1`, requisito de CloudFront) y registro
    DNS del dominio apuntando al distribution de CloudFront.
-5. Para CI/CD, un workflow adicional de GitHub Actions con `aws-actions/configure-aws-credentials`
-   + `aws s3 sync dist/ s3://bucket --delete` + invalidación de CloudFront
-   (`aws cloudfront create-invalidation`) es la extensión natural de `deploy.yml` — no incluido por
-   defecto porque requiere credenciales/ARNs específicos de la cuenta de AWS del cliente.
+5. Para CI/CD, un workflow de GitHub Actions con `aws-actions/configure-aws-credentials` +
+   `aws s3 sync dist/ s3://bucket --delete` + invalidación de CloudFront
+   (`aws cloudfront create-invalidation`) — no incluido por defecto en `.github/workflows/` porque
+   requiere credenciales/ARNs específicos de la cuenta de AWS del cliente.
 
-### 7.5 Variables de entorno
+### 7.6 Variables de entorno
 
 Ver `.env.example` — actualmente ninguna es obligatoria para build o dev (el sitio no tiene
 backend todavía). `PUBLIC_BASE_PATH` y `PUBLIC_CONTACT_ENDPOINT` están declaradas para cuando se
@@ -691,7 +727,7 @@ delgado: importa los mismos componentes que la versión en español y solo escri
 (PageHeader, arrays inline, prosa) ya traducido — los componentes compartidos (`TeamSection`,
 `WhyUs`, `SpecialtiesTabs`...) **no se duplican**, leen `Astro.currentLocale` internamente.
 
-Única excepción: **`404.astro` no tiene espejo `/en/`**. GitHub Pages sirve un único `404.html` en
+Única excepción: **`404.astro` no tiene espejo `/en/`**. El hosting sirve un único `404.html` en
 la raíz para cualquier URL rota, sin importar el idioma de la ruta que falló — un `en/404.astro`
 sería código muerto en producción.
 

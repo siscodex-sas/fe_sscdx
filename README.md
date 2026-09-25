@@ -4,8 +4,9 @@ Sitio web corporativo oficial de **Siscodex** — estudio de ingeniería de soft
 especializado en desarrollo a medida, arquitectura cloud e inteligencia artificial.
 
 Construido con [Astro](https://astro.build) + TypeScript estricto + Tailwind CSS v4, 100%
-estático y listo para desplegarse en GitHub Pages, Vercel, Netlify o AWS S3/CloudFront. Bilingüe
-(español por defecto, inglés bajo `/en/`) vía el routing i18n nativo de Astro.
+estático. Desplegado en **Cloudflare Pages**; también listo para Vercel, Netlify, AWS S3/CloudFront
+o GitHub Pages sin cambios de código. Bilingüe (español por defecto, inglés bajo `/en/`) vía el
+routing i18n nativo de Astro.
 
 📄 **Documentación técnica completa** (arquitectura, sistema de diseño, SEO, performance y
 deployment): [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
@@ -51,10 +52,12 @@ Ver el detalle completo, con la justificación de cada decisión, en
 
 ## Deployment
 
-- **GitHub Pages**: workflow ya configurado en `.github/workflows/deploy.yml`, dominio propio vía
-  `public/CNAME`.
+- **Cloudflare Pages** (actual): conectado directo al repo, auto-deploy en cada push a `master`.
+  Headers de seguridad y redirects reales vía `public/_headers`/`public/_redirects`.
 - **Vercel / Netlify**: detección automática del framework Astro; Netlify usa `netlify.toml`.
 - **AWS (S3 + CloudFront)**: subir el contenido de `dist/` tras `npm run build`.
+- **GitHub Pages**: documentado como alternativa, no usado actualmente (no soporta headers HTTP
+  custom ni redirects HTTP reales).
 
 Instrucciones paso a paso para cada plataforma en
 [`docs/ARCHITECTURE.md § 7`](docs/ARCHITECTURE.md#7-deployment).
