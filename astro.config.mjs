@@ -33,12 +33,10 @@ export default defineConfig({
   },
 
   // /servicios y /soluciones dejaron de ser páginas propias (su contenido se
-  // fusionó en el home) — se mantienen como redirects estáticos (meta-refresh)
-  // para no romper bookmarks/enlaces externos ya indexados.
-  redirects: {
-    "/servicios": "/#servicios",
-    "/soluciones": "/#soluciones",
-  },
+  // fusionó en el home) — el redirect a /#servicios y /#soluciones vive en
+  // public/_redirects (301 real, servido por Cloudflare Pages) en vez de
+  // generarse acá como página de meta-refresh: ese truco solo existía porque
+  // GitHub Pages no podía servir redirects HTTP.
 
   integrations: [
     sitemap({

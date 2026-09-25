@@ -19,26 +19,15 @@ const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;
   <head>
     <meta charset="utf-8" />
     <!--
-      CSP vía meta tag: es la única forma de mandar una Content-Security-Policy
-      en GitHub Pages (no permite headers HTTP custom). Debe ir lo primero
-      posible en <head> — un <meta> CSP solo rige el contenido que viene
-      DESPUÉS de él en el documento, no lo anterior. 'unsafe-inline' en
-      script-src/style-src es necesario porque el sitio usa scripts inline
-      (tema, formulario de contacto, JSON-LD) y Astro inlinea CSS pequeño —
-      no hay nonce/hash posible sin un servidor que los genere por request.
-      Sigue bloqueando: cualquier script/estilo/imagen/fuente de un dominio
-      externo, cambios de <base>, envío de formularios a otro origen.
-      `frame-ancestors` (protección contra clickjacking) NO se puede poner
-      por meta tag — solo por header HTTP real, ver CLAUDE.md/ARCHITECTURE.md
-      cuando el sitio tenga un CDN/servidor delante (Netlify, Cloudflare).
-      Si se integra `PUBLIC_CONTACT_ENDPOINT` en otro dominio, agregarlo a
-      connect-src.
+      La Content-Security-Policy, Referrer-Policy y el resto de headers de
+      seguridad ya NO van acá — viven como headers HTTP reales en
+      public/_headers (Cloudflare Pages los sirve tal cual). Un header real
+      es estrictamente mejor que un <meta> CSP: aplica antes de que el HTML
+      empiece a parsearse (no solo desde este punto en adelante) y sí puede
+      incluir `frame-ancestors` (protección contra clickjacking), que por
+      meta tag el navegador simplemente ignora. Si `public/_headers` cambia,
+      no hace falta tocar este layout.
     -->
-    <meta
-      http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';"
-    />
-    <meta name="referrer" content="strict-origin-when-cross-origin" />
     <script is:inline>
       // Bloqueante a propósito: fija data-theme ANTES del primer paint para
       // que no haya un parpadeo del tema equivocado al cargar. No puede
