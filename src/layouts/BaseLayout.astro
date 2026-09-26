@@ -12,6 +12,7 @@ interface Props extends SEOProps {}
 
 const { title, description, path, image, noindex } = Astro.props;
 const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;
+const gaMeasurementId = import.meta.env.PUBLIC_GA_MEASUREMENT_ID;
 ---
 
 <!doctype html>
@@ -50,6 +51,30 @@ const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;
     <link rel="sitemap" href={withBase("/sitemap-index.xml")} />
     <SEO title={title} description={description} path={path} image={image} noindex={noindex} />
     <ClientRouter />
+
+    {
+      gaMeasurementId && (
+        <>
+          {/*
+            send_page_view: false — con <ClientRouter /> las navegaciones no
+            recargan la página, así que gtag nunca vería la ruta nueva si
+            dejáramos que 'config' mande el page_view automático solo al
+            cargar. En vez de eso, se manda un evento page_view manual en
+            cada astro:page-load (abajo), que cubre tanto la carga inicial
+            como cada navegación SPA subsiguiente por igual.
+          */}
+          <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`} />
+          <script is:inline define:vars={{ gaMeasurementId }}>
+            window.dataLayer = window.dataLayer || [];
+            function gtag() {
+              dataLayer.push(arguments);
+            }
+            gtag("js", new Date());
+            gtag("config", gaMeasurementId, { send_page_view: false });
+          </script>
+        </>
+      )
+    }
   </head>
   <body>
     <Navbar pagePath={path} />
@@ -63,6 +88,23 @@ const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;
       import { applyTheme, getStoredTheme, initThemePersistence } from "@/scripts/theme";
 
       document.addEventListener("astro:page-load", initScrollReveal);
+
+      // gtag se define inline en <head> solo cuando PUBLIC_GA_MEASUREMENT_ID
+      // está seteado (ver comentario junto al script) — sin el chequeo,
+      // esto explotaría en local/preview donde la variable no existe.
+      declare global {
+        interface Window {
+          gtag?: (...args: unknown[]) => void;
+        }
+      }
+
+      document.addEventListener("astro:page-load", () => {
+        window.gtag?.("event", "page_view", {
+          page_location: location.href,
+          page_path: location.pathname + location.search,
+          page_title: document.title,
+        });
+      });
 
       // Sincroniza el meta theme-color (el atributo data-theme del <html>
       // ya lo puso el script bloqueante de arriba) y deja enganchada la
