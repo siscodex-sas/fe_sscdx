@@ -485,6 +485,28 @@ no renderiza SVG en `og:image` (sí lo hacen LinkedIn/Slack) — antes de public
 PNG/JPG de 1200×630 diseñado por el equipo de marca, manteniendo la misma ruta o actualizando
 `DEFAULT_OG_IMAGE` en `src/utils/seo.ts`.
 
+### 5.5 Analytics
+
+Google Analytics 4 (cuenta `siscodex.team@gmail.com`, propiedad "Siscodex Web") vía `gtag.js`,
+cargado en `BaseLayout.astro` — cubre las 22 páginas ES/EN sin duplicación, igual que el resto de
+lo que vive en el layout compartido. Puntos clave de la implementación:
+
+- **Gate por variable de entorno** (`PUBLIC_GA_MEASUREMENT_ID`, ver [§7.6](#76-variables-de-entorno)):
+  si no está seteada, ni el script externo ni el inline se renderizan — así un build local o un
+  deploy de preview no manda datos a la propiedad de producción.
+- **`page_view` manual, no automático**: `gtag("config", ..., { send_page_view: false })` en vez
+  del comportamiento por defecto. Con `<ClientRouter />` (View Transitions) las navegaciones no
+  recargan el documento, así que el `page_view` automático de `config` solo dispararía una vez, en
+  la carga inicial — el resto de la navegación quedaría invisible para GA. En su lugar, se manda
+  `gtag("event", "page_view", {...})` en cada `astro:page-load`, el mismo evento que ya usa
+  `initScrollReveal` para reengancharse tras cada transición — un patrón, dos consumidores.
+- **CSP real** (`public/_headers`, ver [§7.1](#71-cloudflare-pages-actual)): tuvo que ampliarse
+  `script-src`/`img-src`/`connect-src` para permitir `googletagmanager.com`,
+  `google-analytics.com` y `analytics.google.com`. Sin esto el script carga pero el navegador
+  bloquea las llamadas de red sin ningún error visible en consola — si se agrega otro proveedor de
+  analítica/pixel más adelante, revisar primero si el CSP lo permite antes de asumir que "no
+  funciona" es un bug del código.
+
 ---
 
 ## 6. Performance y optimización
@@ -638,10 +660,13 @@ HTTP custom ni redirects HTTP reales — ver §7.1. Si algún día hace falta vo
 
 ### 7.6 Variables de entorno
 
-Ver `.env.example` — actualmente ninguna es obligatoria para build o dev (el sitio no tiene
-backend todavía). `PUBLIC_BASE_PATH` y `PUBLIC_CONTACT_ENDPOINT` están declaradas para cuando se
-necesiten, siguiendo la convención de Astro de exponer al cliente solo variables con prefijo
-`PUBLIC_`.
+Ver `.env.example` — ninguna es obligatoria para build o dev (el sitio no tiene backend todavía,
+y sin `PUBLIC_GA_MEASUREMENT_ID` simplemente no se carga Analytics, ver [§5.5](#55-analytics)).
+`PUBLIC_BASE_PATH` y `PUBLIC_CONTACT_ENDPOINT` están declaradas para cuando se necesiten,
+siguiendo la convención de Astro de exponer al cliente solo variables con prefijo `PUBLIC_`.
+`PUBLIC_GA_MEASUREMENT_ID` es la única que ya está en uso real — solo definida en Cloudflare Pages
+→ Settings → Environment variables → **Production** (nunca en un `.env` commiteado ni en Preview,
+para no mezclar tráfico de PRs con las métricas reales).
 
 ---
 
