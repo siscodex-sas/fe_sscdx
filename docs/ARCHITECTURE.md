@@ -421,14 +421,23 @@ del sector salud (una plataforma para un banco digital de tejidos) se generaliza
 `CLAUDE.md` punto 15. Añadir una especialidad nueva es una entrada más en el array, sin cambios de
 componente, siempre que respete la interfaz `Project` en `src/types/index.ts`.
 
-### 4.4 Formulario de contacto — listo para backend
+### 4.4 Formulario de contacto — envía correo real (vía Formspree, temporal)
 
-`ContactForm.astro` es funcional en el navegador (validación HTML5, estado de envío) pero **no
-envía datos a ningún servidor todavía** — el `submit` handler en su `<script>` hace
-`preventDefault()` y muestra un mensaje de confirmación local. Está marcado con un comentario
-`TODO` explícito señalando dónde conectar un backend real (endpoint propio, AWS Lambda, o un
-servicio como Formspree), y `PUBLIC_CONTACT_ENDPOINT` ya existe en `.env.example` para esa
-integración futura.
+`ContactForm.astro` valida en el navegador (HTML5 + JS) y en el `submit` hace un `fetch` directo a
+`PUBLIC_CONTACT_ENDPOINT` — un formulario de **Formspree** (cuenta `siscodex.team@gmail.com`, plan
+gratis), sin backend propio. Es explícitamente una solución **temporal** mientras se monta el
+correo corporativo en Zoho Mail: cuando esté listo, la migración natural es escribir la lógica de
+envío contra la API de Zoho (sí soporta múltiples destinatarios sin restricción de plan, a
+diferencia del free tier de Formspree que solo admite 1 email de notificación).
+
+**Se intentó primero con Cloudflare Pages Functions + Cloudflare Email Routing** (`send_email`
+binding) — se llegó a implementar completo, pero se descartó sin llegar a producción: el tipo de
+binding "Send Email" **no aparece** en la lista de bindings disponibles para Pages Functions en el
+dashboard de Cloudflare (confirmado en pantalla — solo Analytics Engine, D1, Durable Objects, KV,
+Queues, R2, Vectorize, Workers AI, etc.). Aparenta ser exclusivo de Workers vía Wrangler CLI, no
+expuesto para proyectos de Pages conectados por Git como este. Si Cloudflare lo agrega a Pages en
+el futuro, no vale la pena reintentarlo sin verificar primero que la opción exista en el
+dashboard — ver `CLAUDE.md` punto 25 para el relato completo de por qué se abandonó.
 
 ---
 
@@ -660,13 +669,18 @@ HTTP custom ni redirects HTTP reales — ver §7.1. Si algún día hace falta vo
 
 ### 7.6 Variables de entorno
 
-Ver `.env.example` — ninguna es obligatoria para build o dev (el sitio no tiene backend todavía,
-y sin `PUBLIC_GA_MEASUREMENT_ID` simplemente no se carga Analytics, ver [§5.5](#55-analytics)).
-`PUBLIC_BASE_PATH` y `PUBLIC_CONTACT_ENDPOINT` están declaradas para cuando se necesiten,
-siguiendo la convención de Astro de exponer al cliente solo variables con prefijo `PUBLIC_`.
-`PUBLIC_GA_MEASUREMENT_ID` es la única que ya está en uso real — solo definida en Cloudflare Pages
-→ Settings → Environment variables → **Production** (nunca en un `.env` commiteado ni en Preview,
-para no mezclar tráfico de PRs con las métricas reales).
+Ver `.env.example` — ninguna es obligatoria para build o dev local. Todas llevan prefijo `PUBLIC_`
+(convención de Astro para exponerlas al cliente) porque el sitio sigue sin backend propio.
+
+- `PUBLIC_BASE_PATH`: histórica, para un escenario de subruta que ya no aplica (ver §7.2).
+- `PUBLIC_GA_MEASUREMENT_ID`: sin ella no se carga Analytics, ver [§5.5](#55-analytics).
+- `PUBLIC_CONTACT_ENDPOINT`: endpoint de Formspree del formulario de contacto, ver
+  [§4.4](#44-formulario-de-contacto--envía-correo-real-vía-formspree-temporal). Sin ella el
+  formulario falla silenciosamente al hacer submit.
+
+Todas se definen solo en Cloudflare Pages → Settings → Environment variables → **Production**
+(nunca en un `.env` commiteado ni en Preview, para no mezclar tráfico de PRs con datos/métricas
+reales).
 
 ---
 

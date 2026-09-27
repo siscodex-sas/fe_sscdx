@@ -389,14 +389,38 @@ puro) de una exploración con 3 direcciones + 5 tratamientos de ícono en un Art
     Tiempo real de GA4. Si se agrega otro proveedor de analítica/pixel en el futuro, replicar el
     mismo patrón (env var opcional + gate condicional + `page_view` manual en `astro:page-load` +
     ampliar `_headers`), no asumir que basta con pegar el script.
+25. **`ContactForm.astro` ya envía correos de verdad — a Formspree, no a Cloudflare Email
+    Routing.** El primer intento fue una Cloudflare Pages Function (`functions/api/contact.ts`)
+    usando el binding `send_email` de Cloudflare Email Routing — se llegó a implementar
+    completo (honeypot validado server-side, soporte para 3 destinatarios vía bindings
+    `SEND_EMAIL_1/2/3`) pero **se descartó sin llegar a producción**: el tipo de binding "Send
+    Email" no aparece en la lista de bindings disponibles para Pages Functions en el dashboard de
+    Cloudflare (confirmado en pantalla — solo Analytics Engine, D1, Durable Objects, KV, Queues,
+    R2, Vectorize, Workers AI, etc., ningún Email). Aparenta ser una función exclusiva de Workers
+    vía Wrangler CLI, no expuesta para proyectos de Pages conectados por Git como este. Si en el
+    futuro Cloudflare lo agrega a Pages, el código de ese primer intento está en el historial de
+    git de este punto de la conversación/PR si vale la pena recuperarlo — hoy no existe en el repo.
+
+    La solución real: `PUBLIC_CONTACT_ENDPOINT` apunta directo a un formulario de
+    **Formspree** (cuenta `siscodex.team@gmail.com`, plan gratis) — el cliente hace `fetch` desde
+    `ContactForm.astro` directo al endpoint de Formspree (`https://formspree.io/f/xxxxxxxx`), sin
+    backend propio. Es explícitamente una solución **temporal** mientras se monta el correo
+    corporativo en Zoho Mail — Zoho tiene su propia API/SMTP de envío, así que cuando esté listo la
+    migración natural es escribir la lógica de envío contra la API de Zoho (ahí si soporta
+    múltiples destinatarios sin restricción de plan, a diferencia de Formspree gratis que solo
+    admite 1 email de notificación), no volver a intentar Cloudflare Email Routing. El honeypot
+    (`website`) solo se valida del lado del cliente (no hay backend propio todavía que lo revise
+    de nuevo) — Formspree tiene su propio filtro de spam por su cuenta.
 
 ## Pendientes conocidos antes de un lanzamiento real
 
 - `public/og/default.svg` es un placeholder generado por código (gradiente + logo + texto).
   Twitter/X no renderiza SVG en `og:image` — sustituir por un PNG/JPG 1200×630 real antes de
   publicar (ver `docs/ARCHITECTURE.md` §5.4).
-- `ContactForm.astro` no envía datos a ningún backend todavía — el `TODO` está marcado en su
-  `<script>`. `PUBLIC_CONTACT_ENDPOINT` ya existe en `.env.example` para cuando se integre.
+- `ContactForm.astro` ya envía correos reales vía Formspree (ver punto 25) — pero es una solución
+  temporal a 1 solo destinatario (`siscodex.team@gmail.com`). Cuando Zoho Mail esté listo, migrar
+  el envío a su API (soporta múltiples destinatarios sin restricción de plan, a diferencia del
+  free tier de Formspree) — no reintentar Cloudflare Email Routing, ver por qué en el punto 25.
 - `src/data/projects.ts` ya **no** son casos de cliente inventados: son las 5 áreas de
   especialidad reales de Siscodex (Cloud, IA, Móvil, Web, Salud Digital), pensadas como taxonomía
   fija, no como placeholders a reemplazar. Si se agrega una especialidad nueva, mantener la forma
@@ -451,6 +475,11 @@ no el estado real.
   Si hay varios cambios de temas distintos sin commitear, agruparlos en commits separados por tema
   (usar `git diff --cached --stat` para confirmar el alcance antes de cada commit) en vez de uno
   solo gigante.
+- **Regla explícita del usuario: nunca hacer `git commit` ni `git push` sin su autorización previa
+  en esa misma instancia** — ni siquiera cuando ya pidió el commit o el PR en general. Antes de
+  ejecutar cualquiera de los dos, mostrarle qué se va a commitear/pushear (mensaje propuesto,
+  archivos, rama destino) y esperar una confirmación explícita (sí/no) en el turno, cada vez —
+  "hazlo" o "dale" sobre la tarea en general no es autorización tácita para el commit/push en sí.
 - Cada PR pasa por revisión automática de Copilot — cuando el usuario pida "revisar las sugerencias
   de Copilot", los hallazgos suelen ser reales (no ruido): en esta sesión los 4 que dio eran todos
   válidos (bug de `aria-current`, accesibilidad del flip de `ServiceCard`, semántica ARIA anidada +
