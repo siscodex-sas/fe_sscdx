@@ -6,6 +6,7 @@ import { DEFAULT_LOCALE, type Locale } from "@/i18n/types";
 
 const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;
 const t = useTranslations(locale);
+const contactEndpoint = import.meta.env.PUBLIC_CONTACT_ENDPOINT;
 
 const services = [
   t("contact.services.custom"),
@@ -39,11 +40,10 @@ const inputClasses =
   <div class="relative mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
     <div class="rounded-xl border border-ink-700 bg-ink-800/40 p-6 backdrop-blur-xl sm:p-10">
       <!--
-        Sin backend todavía: el formulario queda listo para integrarse con
-        cualquier servicio (endpoint propio, Formspree, AWS Lambda, etc.)
-        apuntando a PUBLIC_CONTACT_ENDPOINT y sustituyendo el setTimeout
-        simulado del script por un fetch real. El campo honeypot ("website")
-        debe seguir descartándose también en el backend, no solo aquí.
+        Envía directo a Formspree (PUBLIC_CONTACT_ENDPOINT) — solución
+        temporal mientras se monta el correo corporativo en Zoho, ver
+        CLAUDE.md § Historial de decisiones. Sin backend propio: el
+        honeypot ("website") solo se valida acá, del lado del cliente.
       -->
       <form id="contact-form" class="grid grid-cols-1 gap-5 sm:grid-cols-2" novalidate>
         <div class="hidden" aria-hidden="true">
@@ -171,7 +171,7 @@ const inputClasses =
   </div>
 </section>
 
-<script is:inline define:vars={{ i18n: scriptI18n }}>
+<script is:inline define:vars={{ i18n: scriptI18n, contactEndpoint }}>
   document.addEventListener("astro:page-load", () => {
     const form = document.getElementById("contact-form");
     const status = document.querySelector("[data-form-status]");
@@ -259,14 +259,34 @@ const inputClasses =
         return;
       }
 
+      if (!contactEndpoint) {
+        showStatus("error");
+        return;
+      }
+
       setLoading(true);
-      // TODO: sustituir por un fetch real a PUBLIC_CONTACT_ENDPOINT.
-      window.setTimeout(() => {
-        form.reset();
-        requiredFieldNames.forEach((name) => getField(name)?.setAttribute("aria-invalid", "false"));
-        setLoading(false);
-        showStatus("success");
-      }, 700);
+
+      const formData = new FormData(form);
+      formData.delete("website"); // honeypot: ya validado arriba, no hace falta mandarlo
+      const body = Object.fromEntries(formData.entries());
+
+      fetch(contactEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(body),
+      })
+        .then((response) => {
+          if (!response.ok) throw new Error("request_failed");
+          form.reset();
+          requiredFieldNames.forEach((name) => getField(name)?.setAttribute("aria-invalid", "false"));
+          showStatus("success");
+        })
+        .catch(() => {
+          showStatus("error");
+        })
+        .finally(() => {
+          setLoading(false);
+        });
     });
   });
 </script>
