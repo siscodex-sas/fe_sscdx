@@ -373,6 +373,22 @@ puro) de una exploración con 3 direcciones + 5 tratamientos de ícono en un Art
     Settings del repo) en vez de dejarlo como fallback inerte, para que no quede corriendo CI sin
     sentido ni confunda a alguien que lo vea "en verde" pensando que ahí está el sitio real. Ver
     "Deployment" arriba para el estado técnico completo.
+24. **Google Analytics 4** (`siscodex.team@gmail.com`, propiedad "Siscodex Web", ID de medición
+    `G-PKMJ32HD6V`): `gtag.js` se carga en `BaseLayout.astro` solo si `PUBLIC_GA_MEASUREMENT_ID`
+    está seteada — así los builds locales/preview no ensucian las métricas reales; la variable
+    solo existe en Cloudflare Pages → Settings → Environment variables → **Production** (nunca en
+    `.env` ni commiteada). Con `<ClientRouter />` las navegaciones no recargan la página, así que
+    dejar que `gtag("config", ...)` mande su `page_view` automático solo contaría la carga inicial
+    — se usa `send_page_view: false` y en su lugar se manda un evento `page_view` manual en cada
+    `astro:page-load` (mismo listener que ya usa `initScrollReveal`), cubriendo carga inicial y
+    cada transición de página por igual. El CSP real de `public/_headers` tuvo que ampliarse para
+    permitir `googletagmanager.com`/`google-analytics.com`/`analytics.google.com` en
+    `script-src`/`img-src`/`connect-src` — sin esto el script cargaría pero el navegador
+    bloquearía las llamadas en silencio (ningún error visible, simplemente no llegan datos a GA).
+    Validado en producción: script servido con el ID correcto, CSP correcto, y usuario visible en
+    Tiempo real de GA4. Si se agrega otro proveedor de analítica/pixel en el futuro, replicar el
+    mismo patrón (env var opcional + gate condicional + `page_view` manual en `astro:page-load` +
+    ampliar `_headers`), no asumir que basta con pegar el script.
 
 ## Pendientes conocidos antes de un lanzamiento real
 
@@ -418,6 +434,12 @@ no el estado real.
 
 ## Convenciones de commits / trabajo con el usuario
 
+- **Regla explícita del usuario: cualquier ajuste al proyecto debe reflejarse en la documentación
+  (`CLAUDE.md`/`docs/ARCHITECTURE.md`)** — no solo el código. Antes de dar una tarea por
+  terminada, revisar si tocó algo que estos archivos describen (sistema de diseño, componentes,
+  arquitectura, deployment, env vars, contenido/páginas) y actualizarlo en el mismo turno, no
+  como una tarea aparte que "se hace después". Igual que se verifica con `npm run build`, tratar
+  la alineación documental como parte del checklist de "terminado", no como opcional.
 - El usuario (Fherney) suele pedir cambios visuales mostrando una captura de pantalla como
   referencia — cuando pase, comparar contra el estado real del sitio, no asumir; usar el dev
   server o `curl` al HTML compilado para verificar antes de decir que algo está listo. Si la
