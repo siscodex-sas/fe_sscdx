@@ -411,6 +411,15 @@ puro) de una exploración con 3 direcciones + 5 tratamientos de ícono en un Art
     admite 1 email de notificación), no volver a intentar Cloudflare Email Routing. El honeypot
     (`website`) solo se valida del lado del cliente (no hay backend propio todavía que lo revise
     de nuevo) — Formspree tiene su propio filtro de spam por su cuenta.
+26. **Bug de zoom automático en iOS al fallar la validación del formulario**: en mobile Safari, al
+    dar "Enviar solicitud" sin llenar los campos, la página saltaba haciendo zoom — no era un bug
+    de scroll ni de layout, es un comportamiento nativo de iOS Safari: cualquier `input`/`select`/
+    `textarea` con `font-size` menor a 16px dispara zoom automático de la página al recibir foco, y
+    el script de validación hace `firstInvalid.focus()` en el primer campo inválido. `inputClasses`
+    en `ContactForm.astro` usaba `text-sm` (14px) — se cambió a `text-base sm:text-sm` (16px en
+    mobile, 14px desde `sm:` en adelante, sin tocar el diseño de escritorio). Si se agrega un campo
+    de formulario nuevo en cualquier parte del sitio, aplicar el mismo patrón (`text-base sm:text-sm`
+    o directamente nunca bajar de 16px en mobile) para no reintroducir este bug.
 
 ## Pendientes conocidos antes de un lanzamiento real
 
