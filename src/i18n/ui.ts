@@ -16,6 +16,12 @@ export const ui = {
     "theme.switchToDark": "Cambiar a modo oscuro",
 
     "footer.rights": "Todos los derechos reservados.",
+    "cookies.ariaLabel": "Consentimiento de cookies",
+    "cookies.message": "Usamos cookies de analítica solo si las aceptas.",
+    "cookies.learnMore": "Más información",
+    "cookies.accept": "Aceptar",
+    "cookies.reject": "Rechazar",
+    "cookies.preferences": "Preferencias de cookies",
 
     "hero.cta.primary": "Hablemos de tu proyecto",
     "hero.cta.secondary": "Conoce nuestros servicios",
@@ -74,6 +80,8 @@ export const ui = {
     "contact.form.placeholder.message":
       "Cuéntanos brevemente tu necesidad técnica, plazos y alcance estimado...",
     "contact.form.honeypotLabel": "Deja este campo vacío",
+    "contact.form.consentLabel": "Autorizo a Siscodex a tratar mis datos personales, incluida mi ubicación aproximada, conforme a la",
+    "contact.form.consentLink": "Política de privacidad",
     "contact.form.submit": "Enviar solicitud",
     "contact.form.submitting": "Enviando…",
     "contact.services.custom": "Desarrollo de software a medida",
@@ -87,9 +95,13 @@ export const ui = {
     "contact.error.phonePattern": "Ingresa solo números (puedes usar +, espacios, paréntesis o guiones).",
     "contact.error.minLength": "Escribe al menos {min} caracteres.",
     "contact.error.generic": "Revisa este campo.",
+    "contact.error.consent": "Debes autorizar el tratamiento de tus datos para enviar la solicitud.",
     "contact.status.success":
       "¡Gracias por escribirnos! Un miembro de nuestro equipo revisará tu solicitud y se pondrá en contacto contigo pronto.",
     "contact.status.error": "Revisa los campos marcados antes de enviar.",
+    "contact.status.captcha": "Completa la verificación de seguridad antes de enviar.",
+    "contact.status.sendError":
+      "No pudimos enviar tu mensaje. Inténtalo de nuevo en unos minutos o escríbenos a contacto@siscodex.com.",
 
     "seo.orgDescription":
       "Siscodex es un estudio de ingeniería de software especializado en desarrollo a medida, arquitectura cloud e inteligencia artificial para empresas.",
@@ -102,6 +114,12 @@ export const ui = {
     "theme.switchToDark": "Switch to dark mode",
 
     "footer.rights": "All rights reserved.",
+    "cookies.ariaLabel": "Cookie consent",
+    "cookies.message": "We use analytics cookies only if you accept them.",
+    "cookies.learnMore": "Learn more",
+    "cookies.accept": "Accept",
+    "cookies.reject": "Reject",
+    "cookies.preferences": "Cookie preferences",
 
     "hero.cta.primary": "Let's talk about your project",
     "hero.cta.secondary": "See our services",
@@ -160,6 +178,8 @@ export const ui = {
     "contact.form.placeholder.message":
       "Tell us briefly about your technical needs, timeline and estimated scope...",
     "contact.form.honeypotLabel": "Leave this field empty",
+    "contact.form.consentLabel": "I authorize Siscodex to process my personal data, including my approximate location, in accordance with the",
+    "contact.form.consentLink": "Privacy policy",
     "contact.form.submit": "Send request",
     "contact.form.submitting": "Sending…",
     "contact.services.custom": "Custom software development",
@@ -173,9 +193,13 @@ export const ui = {
     "contact.error.phonePattern": "Numbers only (you can use +, spaces, parentheses or hyphens).",
     "contact.error.minLength": "Write at least {min} characters.",
     "contact.error.generic": "Check this field.",
+    "contact.error.consent": "You must authorize the processing of your data to send the request.",
     "contact.status.success":
       "Thanks for reaching out! A member of our team will review your request and get back to you soon.",
     "contact.status.error": "Check the highlighted fields before submitting.",
+    "contact.status.captcha": "Complete the security check before submitting.",
+    "contact.status.sendError":
+      "We couldn't send your message. Please try again in a few minutes or email us at contacto@siscodex.com.",
 
     "seo.orgDescription":
       "Siscodex is a software engineering studio specialized in custom development, cloud architecture and artificial intelligence for businesses.",

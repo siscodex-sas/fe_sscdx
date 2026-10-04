@@ -1,0 +1,100 @@
+---
+/**
+ * Banner de consentimiento de cookies de Google Analytics (CLAUDE.md punto 28).
+ * Solo se renderiza si PUBLIC_GA_MEASUREMENT_ID está configurado — sin GA no
+ * hay cookies que consentir. Arranca oculto (`hidden`) y el script lo muestra
+ * solo si no hay una elección guardada, así no parpadea en cada página.
+ *
+ * "Aceptar" y "Rechazar" tienen el mismo estilo a propósito: las guías de
+ * consentimiento (RGPD/EDPB) piden que rechazar sea igual de fácil y visible
+ * que aceptar. Se puede reabrir con el botón "Preferencias de cookies" del
+ * Footer (cualquier elemento con data-cookie-preferences).
+ */
+import { localizedHref, useTranslations } from "@/i18n/utils";
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/types";
+import { withBase } from "@/utils/url";
+
+const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;
+const t = useTranslations(locale);
+const gaConfigured = Boolean(import.meta.env.PUBLIC_GA_MEASUREMENT_ID);
+const policyHref = `${withBase(localizedHref("/legal/privacidad", locale))}#cookies`;
+const buttonClasses =
+  "inline-flex cursor-pointer items-center justify-center rounded-md border border-ink-600 px-3 py-1.5 text-xs font-medium text-ink-100 transition-colors hover:border-brand-400 hover:text-brand-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400";
+---
+
+{
+  gaConfigured && (
+    <section
+      data-cookie-banner
+      hidden
+      role="region"
+      aria-label={t("cookies.ariaLabel")}
+      class="fixed inset-x-4 bottom-4 z-50 flex flex-col gap-3 rounded-lg border border-ink-700 bg-ink-900/95 p-4 shadow-lg backdrop-blur-xl sm:right-auto sm:max-w-xs"
+    >
+      <p class="text-xs leading-relaxed text-ink-300">
+        {t("cookies.message")}{" "}
+        <a href={policyHref} class="text-brand-400 underline-offset-2 hover:underline">
+          {t("cookies.learnMore")}
+        </a>
+      </p>
+      <div class="flex justify-end gap-2">
+        <button type="button" data-cookie-reject class={buttonClasses}>
+          {t("cookies.reject")}
+        </button>
+        <button type="button" data-cookie-accept class={buttonClasses}>
+          {t("cookies.accept")}
+        </button>
+      </div>
+    </section>
+  )
+}
+
+<script>
+  import {
+    getConsent,
+    isAnalyticsConfigured,
+    setConsent,
+    trackPageView,
+  } from "@/scripts/analytics";
+
+  function getBanner(): HTMLElement | null {
+    return document.querySelector<HTMLElement>("[data-cookie-banner]");
+  }
+
+  function showBanner(focus: boolean) {
+    const banner = getBanner();
+    if (!banner) return;
+    banner.hidden = false;
+    if (focus) banner.querySelector<HTMLButtonElement>("button")?.focus();
+  }
+
+  function hideBanner() {
+    const banner = getBanner();
+    if (banner) banner.hidden = true;
+  }
+
+  // El banner viene oculto en cada página nueva (View Transitions reemplaza el
+  // <body>): se vuelve a mostrar solo mientras no haya elección.
+  document.addEventListener("astro:page-load", () => {
+    if (isAnalyticsConfigured() && getConsent() === null) showBanner(false);
+  });
+
+  // Delegación sobre document (se engancha una sola vez y consulta el DOM
+  // actual en cada clic) — mismo patrón que Navbar/SpecialtiesTabs, ver
+  // CLAUDE.md punto 14.
+  document.addEventListener("click", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    if (!target) return;
+
+    if (target.closest("[data-cookie-accept]")) {
+      setConsent("granted");
+      hideBanner();
+      trackPageView(); // la página actual no tuvo page_view (GA no estaba cargado)
+    } else if (target.closest("[data-cookie-reject]")) {
+      setConsent("denied");
+      hideBanner();
+    } else if (target.closest("[data-cookie-preferences]")) {
+      showBanner(true);
+    }
+  });
+</script>

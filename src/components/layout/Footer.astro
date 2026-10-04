@@ -8,6 +8,8 @@ const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;
 const t = useTranslations(locale);
 const footerLinks = getFooterLinks(locale);
 const year = new Date().getFullYear();
+// Reabre el banner de CookieConsent (delegación de clics en ese componente).
+const gaConfigured = Boolean(import.meta.env.PUBLIC_GA_MEASUREMENT_ID);
 ---
 
 <footer class="border-t border-ink-700 bg-ink-950">
@@ -36,6 +38,17 @@ const year = new Date().getFullYear();
     <div class="mt-14 flex flex-col items-center gap-1 border-t border-ink-700 pt-8 text-center text-xs text-ink-400">
       <p>© {year} Siscodex.</p>
       <p>{t("footer.rights")}</p>
+      {
+        gaConfigured && (
+          <button
+            type="button"
+            data-cookie-preferences
+            class="mt-2 cursor-pointer text-ink-400 underline-offset-2 transition-colors hover:text-brand-300 hover:underline"
+          >
+            {t("cookies.preferences")}
+          </button>
+        )
+      }
     </div>
   </div>
 </footer>

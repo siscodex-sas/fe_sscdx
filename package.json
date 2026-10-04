@@ -9,6 +9,7 @@
     "start": "astro dev",
     "build": "astro check && astro build",
     "preview": "astro preview",
+    "dev:cf": "astro build && wrangler pages dev dist --compatibility-date=2026-09-01",
     "astro": "astro",
     "check": "astro check",
     "format": "prettier --write ."
@@ -30,7 +31,8 @@
     "@astrojs/check": "^0.9.4",
     "prettier": "^3.4.2",
     "prettier-plugin-astro": "^0.14.1",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "wrangler": "^4.141.0"
   },
   "engines": {
     "node": ">=20.3.0"
