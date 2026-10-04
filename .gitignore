@@ -18,6 +18,10 @@ yarn-error.log*
 .env
 .env.production
 .env.*.local
+.dev.vars*
+
+# wrangler (estado local de `wrangler pages dev`)
+.wrangler/
 
 # macOS
 .DS_Store

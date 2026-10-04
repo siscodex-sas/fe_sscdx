@@ -18,8 +18,12 @@ npm install
 npm run dev       # http://localhost:4321
 npm run build     # astro check + build de producción en dist/
 npm run preview   # sirve dist/ localmente
+npm run dev:cf    # build + `wrangler pages dev`: sitio + Pages Functions (formulario real) en :8788
 npm run check     # solo type-check
 ```
+
+`npm run dev` (Astro) **no** ejecuta `functions/` — el formulario de contacto solo funciona de
+punta a punta con `npm run dev:cf`, que lee el mismo `.env` (copiar de `.env.example`).
 
 Si `npm install` falla con un ERESOLVE por `typescript`: `@astrojs/check` todavía no soporta
 TypeScript 7.x — mantener `typescript` en `^6.x` en `package.json` (ver historial de este archivo
@@ -32,16 +36,20 @@ src/
 ├── components/
 │   ├── ui/        → átomos sin conocimiento de negocio (Button, SectionTitle, TechnologyBadge, TechTile, StatusPill)
 │   ├── sections/   → bloques de página (Hero, ServiceCard, SpecialtiesTabs, TeamSection, TeamCard, ContactForm, CTASection...)
-│   ├── layout/     → Navbar, Footer (en todas las páginas)
+│   ├── layout/     → Navbar, Footer, CookieConsent (en todas las páginas)
 │   └── seo/        → <SEO /> (metadata, OG, JSON-LD)
-├── data/           → contenido tipado: services.ts, projects.ts, technologies.ts, team.ts, navigation.ts
+├── data/           → contenido tipado: services.ts, projects.ts, technologies.ts, team.ts, navigation.ts, company.ts (datos legales)
 ├── i18n/           → ui.ts (diccionario ES/EN), utils.ts (t(), localizedHref(), alternateUrls()), types.ts (Locale)
 ├── layouts/        → BaseLayout (páginas normales), SimpleContentLayout (legal/recursos)
 ├── pages/          → rutas (file-based routing de Astro) — en/ espeja cada página en inglés
-├── scripts/        → reveal.ts (scroll-reveal con la librería "motion")
+├── scripts/        → reveal.ts (scroll-reveal con "motion"), theme.ts (modo claro), analytics.ts (GA4 con consentimiento)
 ├── styles/         → global.css — AQUÍ VIVE TODO EL SISTEMA DE COLOR/TIPOGRAFÍA (@theme de Tailwind v4)
 ├── types/          → contratos de datos (Service, Project, Technology...)
+├── emails/         → plantillas de correo (contactNotification.ts: HTML + texto de la notificación del formulario)
 └── utils/          → seo.ts (título, canonical, OG)
+
+functions/          → Cloudflare Pages Functions (backend serverless, se despliega con el sitio)
+└── api/contact.ts  → POST /api/contact: valida, verifica Turnstile y envía por Resend
 ```
 
 **Regla de oro**: nunca hardcodear un color hex dentro de un componente `.astro`. Todo pasa por
@@ -49,7 +57,9 @@ los tokens de `src/styles/global.css` (`ink-*`, `brand-*`, `accent-*`). Cambiar 
 es, en teoría, un cambio de un solo archivo — así se hizo el rebrand de cian/violeta a verde (ver
 "Historial de decisiones" abajo). Las únicas excepciones legítimas son archivos que Tailwind no
 procesa: `public/favicon.svg`, `public/og/default.svg` y el `theme-color` en `BaseLayout.astro` —
-si cambia la paleta, esos tres hay que tocarlos a mano.
+si cambia la paleta, esos tres hay que tocarlos a mano. Lo mismo aplica a la plantilla de correo
+`src/emails/contactNotification.ts` (objeto `colors`): los clientes de correo no soportan variables
+CSS, así que ahí los hex son obligatorios.
 
 **Segunda regla de oro**: cualquier `href`/`src` interno que empiece con `/` (rutas de página,
 `/logo.png`, `/favicon.svg`) **debe** pasar por `withBase()` de `src/utils/url.ts`. `Button.astro`
@@ -128,10 +138,12 @@ sin tabla de equivalencias de slugs). Usa el routing i18n nativo de Astro (`i18n
   (`technologies.ts` → `technologies`, sin función) **no se traducen** — son nombres propios.
 - **`Astro.currentLocale`** está disponible en cualquier `.astro` sin pasarlo por props — patrón
   usado en todos partes: `const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;`.
-- **`ContactForm.astro`**: el `<script>` de validación es inline, así que las strings traducidas
-  (mensajes de error, estado de envío) se inyectan con `<script define:vars={{ i18n: {...} }}>`
-  (mecanismo oficial de Astro para pasar valores server-computed a un script de cliente) — el
-  script las lee de `i18n.required`, etc., en vez de tener strings literales.
+- **`ContactForm.astro`**: las strings traducidas del script (mensajes de error, estados de envío)
+  viajan como JSON en `data-i18n` del `<form>`, junto con `data-endpoint`,
+  `data-turnstile-site-key` y `data-locale`; el `<script>` (empaquetado, no `is:inline`) las lee
+  del form actual en cada `astro:page-load`. Antes usaba `<script is:inline define:vars>`, que con
+  `<ClientRouter />` se re-ejecutaba en cada navegación y acumulaba listeners de `submit` — ver
+  punto 26 de "Historial de decisiones".
 - **`LanguageSwitcher.astro`** (pastilla dorada en el Navbar, "EN"/"ES"): es un `<a href>` normal,
   sin JS — calcula la URL equivalente en el otro idioma con `alternateUrls()`/`localizedHref()` de
   `src/i18n/utils.ts`. Al no tener estado de cliente, no hay riesgo de bug de View Transitions
@@ -374,7 +386,8 @@ puro) de una exploración con 3 direcciones + 5 tratamientos de ícono en un Art
     sentido ni confunda a alguien que lo vea "en verde" pensando que ahí está el sitio real. Ver
     "Deployment" arriba para el estado técnico completo.
 24. **Google Analytics 4** (`siscodex.team@gmail.com`, propiedad "Siscodex Web", ID de medición
-    `G-PKMJ32HD6V`): `gtag.js` se carga en `BaseLayout.astro` solo si `PUBLIC_GA_MEASUREMENT_ID`
+    `G-PKMJ32HD6V`): `gtag.js` se carga (hoy desde `src/scripts/analytics.ts` y solo con consentimiento de cookies, ver
+    punto 28) solo si `PUBLIC_GA_MEASUREMENT_ID`
     está seteada — así los builds locales/preview no ensucian las métricas reales; la variable
     solo existe en Cloudflare Pages → Settings → Environment variables → **Production** (nunca en
     `.env` ni commiteada). Con `<ClientRouter />` las navegaciones no recargan la página, así que
@@ -410,17 +423,142 @@ puro) de una exploración con 3 direcciones + 5 tratamientos de ícono en un Art
     múltiples destinatarios sin restricción de plan, a diferencia de Formspree gratis que solo
     admite 1 email de notificación), no volver a intentar Cloudflare Email Routing. El honeypot
     (`website`) solo se valida del lado del cliente (no hay backend propio todavía que lo revise
-    de nuevo) — Formspree tiene su propio filtro de spam por su cuenta.
+    de nuevo) — Formspree tiene su propio filtro de spam por su cuenta. **Reemplazado por el punto
+    26** (Pages Function + Turnstile + Resend) — la premisa de "migrar a la API de Zoho" no se
+    sostuvo: el plan gratis de Zoho Mail no incluye SMTP/API de envío.
+26. **Formulario de contacto: Pages Function + Turnstile + Resend (reemplaza Formspree).** Se
+    evaluaron las opciones con el cliente antes de implementar — comparación completa con ventajas
+    de cada opción en [`docs/ENVIO-DE-CORREOS.md`](docs/ENVIO-DE-CORREOS.md). Decisiones y por qué:
+    - **Resend, no Cloudflare Email Routing/`send_email`**: Email Routing exige que los MX de
+      `siscodex.com` apunten a Cloudflare, y el correo corporativo va a vivir en **Zoho Mail** (sus
+      propios MX) — no pueden convivir en el mismo dominio. Además solo envía a direcciones
+      verificadas y su binding no existe en Pages Functions (punto 25). Cloudflare Email Sending
+      (envío a cualquiera) sí existe, pero en beta y con Workers Paid (5 USD/mes). Resend: plan
+      gratis 3.000 correos/mes, 100/día, y convive con Zoho en el DNS (Resend usa el subdominio
+      `send.` para SPF/return-path y `resend._domainkey` para DKIM; Zoho usa la raíz y
+      `zmail._domainkey`).
+    - **Pages Function, no Worker aparte**: mismo repo, mismo deploy automático, mismo dominio
+      (`/api/contact`, sin CORS y sin abrir el CSP a otro origen), variables en el mismo proyecto.
+      Un Worker solo haría falta para bindings que Pages no tiene, y con Resend basta un `fetch`.
+    - **Turnstile** (antispam de Cloudflare, gratis) porque el endpoint es público por naturaleza —
+      la función rechaza cualquier petición sin token válido (un solo uso, 5 min). Además:
+      destinatarios fijos (`CONTACT_TO`, la API no deja elegir a quién enviar — no se puede usar
+      como relay), chequeo de `Origin` mismo-host, honeypot revalidado en servidor, límites de
+      longitud por campo, HTML escapado en la plantilla, y CR/LF removidos del subject.
+    - **Solo notificación interna, sin correo de confirmación al visitante** (por ahora): sería el
+      único vector para mandar correo con remitente Siscodex a direcciones ajenas, y duplica la
+      cuota. Si se agrega, es otra plantilla en `src/emails/`.
+    - **Variables: sin script que genere un `.ts` con los valores.** Se descartó la idea (hubiera
+      escrito secretos en archivos de build, con riesgo de terminar en `dist/`). En producción la
+      función los recibe en runtime vía `context.env` (Cloudflare Pages → Variables and Secrets);
+      en local `wrangler pages dev` lee el mismo `.env` de la raíz de forma nativa. La única
+      variable que necesita el build es `PUBLIC_TURNSTILE_SITE_KEY` (pública por diseño), que Astro
+      lee de `import.meta.env` como `PUBLIC_GA_MEASUREMENT_ID`.
+    - **Bug latente corregido de paso**: el `<script is:inline define:vars>` anterior de
+      `ContactForm.astro` se re-ejecutaba en cada navegación con `<ClientRouter />` y sumaba
+      listeners de `submit` — tras ir y volver a /contacto, un clic enviaba varias peticiones (con
+      Resend: correos duplicados, y un error visible porque el token de Turnstile ya se había
+      gastado). Ahora es un `<script>` empaquetado que lee la config de los `data-*` del form y
+      marca el form con `data-contact-ready` — misma familia de bug que el punto 14.
+    - **Ubicación del visitante en la notificación**: ciudad, región y país salen de `request.cf`
+      (geolocalización por IP que Cloudflare agrega a cada petición, gratis), no de campos del
+      formulario — el cliente pidió saber "desde dónde escribe" sin alargar el formulario. Es
+      aproximada (VPN/red corporativa/datos móviles la desvían) y el correo lo aclara ("aprox.,
+      según IP"); el país se traduce con `Intl.DisplayNames` (`CO` → "Colombia"), la región viene
+      en inglés tal como la da Cloudflare. En `wrangler pages dev` también funciona (usa la
+      geolocalización real de la conexión local).
+    - **Tipos de la función a mano** (interfaz `PagesContext`), sin `@cloudflare/workers-types`:
+      solo usa APIs web estándar que ya trae el lib DOM del tsconfig de Astro, así `astro check`
+      la cubre sin tsconfig aparte ni tipos globales que choquen con Astro.
+    - Probado en local con `wrangler pages dev` (no con correo real, faltaba la API key de
+      Resend): todos los rechazos (Origin, JSON, campos, honeypot, sin token) responden bien, y un
+      token de prueba de Turnstile pasa la verificación real contra Cloudflare y llega hasta
+      Resend.
+
+27. **Política de privacidad conforme a la Ley 1581 de 2012 + autorización en el formulario.**
+    Surgió al agregar la ubicación por IP (punto 26), con el pedido explícito del cliente de "que
+    no haya una fuga a nivel legal". Al revisar la política vieja apareció algo más grave: decía
+    que el sitio "no utiliza cookies de seguimiento ni analítica de terceros", falso desde que se
+    agregó GA4 (punto 24); tampoco tenía el contenido mínimo del art. 13 del Decreto 1377 de 2013,
+    y el correo de contacto era `hola@siscodex.com` (no existe — el real es `info@`, también
+    corregido en `/legal/terminos`). Se reescribió `/legal/privacidad` (ES y EN) con: responsable
+    del tratamiento, datos recopilados (formulario, ubicación aproximada por IP, Turnstile, GA4,
+    `localStorage` del tema), finalidades, autorización, encargados y transferencia internacional
+    (Cloudflare, Resend, Zoho, Google), derechos del art. 8, procedimiento con los plazos legales
+    (consultas 10 + 5 días hábiles, reclamos 15 + 8), cookies, conservación y vigencia.
+    - **Datos legales en `src/data/company.ts`** (razón social, NIT, dirección, ciudad, teléfono,
+      correo, fecha de vigencia) — un solo lugar para las dos versiones. **No se inventaron**: un
+      campo vacío se muestra en la política como texto entre paréntesis que dice qué hay que poner
+      (objeto `pending` de cada página, pedido explícito del cliente), así el hueco queda visible
+      hasta completarlo en vez de desaparecer en silencio. Incluye `legalName` (no está confirmado
+      que sea "Siscodex S.A.S.").
+    - **Casilla obligatoria de autorización en `ContactForm.astro`** (`privacyConsent`, enlaza a la
+      política en el idioma actual, en pestaña nueva para no perder lo escrito). La función la
+      revalida (`privacyConsent !== "on"` → `invalid_fields`) y la plantilla del correo deja la
+      constancia ("Autorización de datos: aceptó la política vigente desde AAAA-MM-DD") — el art. 9
+      exige conservar prueba de la autorización, así que **los correos de notificación en Zoho no
+      deben borrarse** mientras dure la relación con esa persona.
+    - **Si cambia la política de forma sustancial**, actualizar `privacyPolicyEffectiveDate`: esa
+      fecha es la "versión" que queda registrada en cada autorización nueva.
+    - Redactada por Claude a partir de la norma, no por un abogado — ver Pendientes.
+
+28. **Banner de consentimiento de cookies para GA4** (`CookieConsent.astro` +
+    `src/scripts/analytics.ts`): pedido por el cliente tras el punto 27. Antes, `gtag.js` se cargaba
+    incondicional en el `<head>` de `BaseLayout.astro` (punto 24); ahora **no se carga hasta que el
+    visitante acepta** — modelo "bloqueo previo" (no Consent Mode de Google en modo básico/avanzado:
+    sin consentimiento no sale ni una petición a Google, que es la lectura más estricta del RGPD y
+    la que no requiere configurar nada en GA).
+    - La elección se guarda en `localStorage` (`siscodex:cookie-consent`, JSON `{status, at}`) y
+      vence a los 12 meses. Rechazar después de aceptar pone `ga-disable-<ID>` y borra las cookies
+      `_ga*` (probando las variantes de `domain`, porque una cookie solo se borra con el mismo).
+    - "Aceptar" y "Rechazar" tienen **el mismo estilo a propósito** (guías RGPD/EDPB: rechazar debe
+      ser igual de fácil). No convertir "Aceptar" en botón primario verde "para mejorar la tasa".
+    - **Diseño discreto a pedido del cliente**: tarjeta pequeña (`max-w-xs`) en la esquina inferior
+      izquierda en desktop (ancho completo con margen en móvil), `text-xs`, texto de una línea
+      ("Usamos cookies de analítica solo si las aceptas. Más información") — el detalle vive en la
+      sección 7 de la política (enfoque "por capas", válido para consentimiento informado). No es
+      un muro que bloquee el sitio: se puede navegar sin elegir, y GA sigue sin cargar mientras
+      tanto.
+    - Reabrible desde "Preferencias de cookies" en el Footer (`data-cookie-preferences`, delegación
+      de clics en `document` — patrón del punto 14). Banner y enlace solo se renderizan si
+      `PUBLIC_GA_MEASUREMENT_ID` existe: sin GA no hay cookies que consentir.
+    - Al aceptar a mitad de una página se manda el `page_view` de esa página en el momento (GA no
+      estaba cargado cuando pasó su `astro:page-load`).
+    - **Efecto esperado en GA4**: menos visitas registradas que antes (solo cuentan quienes
+      aceptan). No es un bug de la integración.
+    - La política (sección 7, `id="cookies"`, enlazada desde el banner) se actualizó para
+      describir este funcionamiento.
+
+29. **Siscodex aún no está constituida legalmente → sección "Responsable del tratamiento"
+    desactivada.** Con la empresa sin constituir no hay razón social, NIT ni domicilio que
+    publicar, y mostrar los textos entre paréntesis del punto 27 en producción, o una "S.A.S." que
+    no existe, era peor que omitirlos. A pedido del cliente, la sección quedó **comentada (no
+    borrada)** en `legal/privacidad.astro` y `en/legal/privacidad.astro` (comentario JSX con
+    instrucciones), y las demás secciones se renumeraron 1–9 (cookies pasó de la 8 a la 7). El
+    párrafo de cumplimiento de la Ley 1581 y el correo de contacto (sección 6) siguen visibles.
+    - **Riesgo asumido, no resuelto**: el art. 13 del Decreto 1377 exige identificar al
+      responsable. Mientras no exista la sociedad, el responsable real son las personas naturales
+      detrás del proyecto; la alternativa más sólida (propuesta, no implementada) es nombrar a una
+      de ellas como responsable hasta constituir la empresa.
+    - **Al constituir la empresa**: completar `src/data/company.ts`, quitar el comentario en las
+      dos páginas y volver a numerar (+1 a todas; "Ver la sección 7" → 8, y los "sección 7" de
+      este archivo, punto 28).
 
 ## Pendientes conocidos antes de un lanzamiento real
 
 - `public/og/default.svg` es un placeholder generado por código (gradiente + logo + texto).
   Twitter/X no renderiza SVG en `og:image` — sustituir por un PNG/JPG 1200×630 real antes de
   publicar (ver `docs/ARCHITECTURE.md` §5.4).
-- `ContactForm.astro` ya envía correos reales vía Formspree (ver punto 25) — pero es una solución
-  temporal a 1 solo destinatario (`siscodex.team@gmail.com`). Cuando Zoho Mail esté listo, migrar
-  el envío a su API (soporta múltiples destinatarios sin restricción de plan, a diferencia del
-  free tier de Formspree) — no reintentar Cloudflare Email Routing, ver por qué en el punto 25.
+- **Formulario de contacto (punto 26): código listo, falta configuración fuera del repo** —
+  (1) Zoho Mail activo en `siscodex.com` (MX/SPF/DKIM en Cloudflare DNS, CNAMEs en "DNS only");
+  (2) dominio verificado en Resend (sus registros DNS en Cloudflare) + API key; (3) widget de
+  Turnstile creado en el dashboard de Cloudflare con hostname `siscodex.com`; (4) variables en
+  Cloudflare Pages (ver `docs/ARCHITECTURE.md` §7.6); (5) regla de rate limiting en Cloudflare →
+  Security → WAF (p. ej. 5 peticiones/10 min por IP a `/api/contact`); (6) prueba real en
+  producción y dar de baja el formulario de Formspree (`siscodex.team@gmail.com`).
+- **Política de privacidad (puntos 27 y 29)**: la empresa no está constituida, así que la sección
+  "Responsable del tratamiento" está comentada. Al constituirla: completar `src/data/company.ts`,
+  reactivar la sección y renumerar. Hacerla revisar por un abogado antes de darla por definitiva.
 - `src/data/projects.ts` ya **no** son casos de cliente inventados: son las 5 áreas de
   especialidad reales de Siscodex (Cloud, IA, Móvil, Web, Salud Digital), pensadas como taxonomía
   fija, no como placeholders a reemplazar. Si se agrega una especialidad nueva, mantener la forma
@@ -447,7 +585,10 @@ no existe el escenario de subruta que sí aplicaba a GitHub Pages de proyecto. D
 del repo, configurado en su dashboard). `public/_headers` (CSP real con `frame-ancestors`, caché
 inmutable para `/_astro/*`, resto de headers de seguridad) y `public/_redirects` (redirects 301
 reales de `/servicios`/`/soluciones`) — Cloudflare Pages los sirve tal cual, mismo formato que
-Netlify. Ver punto 23 de "Historial de decisiones" para el porqué de la migración.
+Netlify. Ver punto 23 de "Historial de decisiones" para el porqué de la migración. `functions/`
+(Pages Functions) se despliega automáticamente en el mismo push — hoy solo `/api/contact`, que
+necesita las variables `RESEND_API_KEY`, `TURNSTILE_SECRET_KEY`, `CONTACT_TO`, `CONTACT_FROM`
+(runtime) y `PUBLIC_TURNSTILE_SITE_KEY` (build) en Settings → Variables and Secrets.
 
 GitHub Pages **ya no se usa** (decomisionado: se borró `.github/workflows/deploy.yml`,
 `public/CNAME`, y se deshabilitó Pages en la configuración del repo) — si aparece cualquiera de

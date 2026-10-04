@@ -1,32 +1,215 @@
 ---
 import SimpleContentLayout from "@/layouts/SimpleContentLayout.astro";
+import { company } from "@/data/company";
+
+// Mirror of legal/privacidad.astro (structure per art. 13 of Colombian Decree
+// 1377 of 2013). Keep both versions in sync — see CLAUDE.md point 27.
+const effectiveDate = new Intl.DateTimeFormat("en-US", {
+  dateStyle: "long",
+  timeZone: "UTC",
+}).format(new Date(company.privacyPolicyEffectiveDate));
+// Missing legal data in src/data/company.ts: the page shows in parentheses what
+// must go there, so the gap stays visible until it is filled — see CLAUDE.md
+// point 27.
+const pending = {
+  legalName: "(Exact legal name, as registered in the RUT or Chamber of Commerce certificate)",
+  nit: "(Company tax ID with check digit, e.g. 901.234.567-8)",
+  city: "(City and department of the main domicile, e.g. Cúcuta, Norte de Santander)",
+  address: "(Company's physical address for notices)",
+  phone: "(Company contact phone number, with country code, e.g. +57 300 000 0000)",
+};
+const domicile = `${company.city || pending.city}, ${company.country.en}`;
 ---
 
 <SimpleContentLayout
   eyebrow="Legal"
   title="Privacy policy"
-  intro="How Siscodex collects, uses and protects the information of those who visit this site or hire our services."
-  description="Siscodex's privacy policy."
+  intro="How Siscodex collects, uses and protects the information of people who visit this site or write to us through the contact form."
+  description="Siscodex privacy and personal data processing policy, under Colombian Law 1581 of 2012."
   path="/en/legal/privacidad"
 >
-  <h2>Data we collect</h2>
+  <p>Effective as of {effectiveDate}.</p>
+
+  {/*
+    SECTION DISABLED ON PURPOSE: Siscodex is not legally incorporated yet, so there
+    is no legal name, tax ID or domicile to publish (CLAUDE.md point 29). Once it is:
+    fill src/data/company.ts, remove this comment (here and in legal/privacidad.astro)
+    and renumber the sections starting from 1 = "Data controller" (+1 to all, and
+    "See section 7" → 8).
+  <h2>1. Data controller</h2>
+  <ul>
+    <li><strong>Legal name:</strong> {company.legalName || pending.legalName}</li>
+    <li><strong>Tax ID (NIT):</strong> {company.nit || pending.nit}</li>
+    <li><strong>Domicile:</strong> {domicile}</li>
+    <li><strong>Address:</strong> {company.address || pending.address}</li>
+    <li><strong>Phone:</strong> {company.phone || pending.phone}</li>
+    <li>
+      <strong>Email for personal data matters:</strong>
+      <a href={`mailto:${company.privacyEmail}`}>{company.privacyEmail}</a>
+    </li>
+  </ul>
+  */}
   <p>
-    We only collect the information you voluntarily submit through our contact form (name,
-    company, email, phone and project description). This site does not use tracking cookies or
-    third-party analytics.
+    This policy is issued in compliance with Colombian Law 1581 of 2012, Decree 1377 of 2013
+    (compiled in Decree 1074 of 2015) and other Colombian personal data protection regulations.
   </p>
 
-  <h2>Use of information</h2>
+  <h2>1. Data we collect</h2>
   <p>
-    The information submitted is used exclusively to respond to your contact request and, if you
-    move forward with a project, for its commercial and technical management. We do not share
-    your data with third parties for advertising purposes.
+    <strong>Data you provide in the contact form:</strong> name, company, email, phone, service of interest
+    and your project description.
+  </p>
+  <p><strong>Data generated automatically when you submit the form:</strong></p>
+  <ul>
+    <li>
+      <strong>Approximate location</strong> (city, region and country), derived from your IP address by
+      our infrastructure provider, Cloudflare. It is not your exact location: we do not use GPS or ask
+      your browser for location permission, and it may be inaccurate if you use a VPN, a corporate network
+      or mobile data.
+    </li>
+    <li>The date and time of submission and the site language you wrote from.</li>
+    <li>
+      Your IP address and technical browser signals, used by <strong>Cloudflare Turnstile</strong> to
+      verify that the submission comes from a person and not an automated program. Siscodex does not store
+      your IP address.
+    </li>
+  </ul>
+  <p><strong>Data generated while browsing the site:</strong></p>
+  <ul>
+    <li>
+      <strong>Google Analytics 4</strong>, <strong>only if you accept cookies</strong> in the notice shown
+      when you enter the site: it measures, in aggregate, how the site is used (pages visited, visit duration,
+      device type, approximate country or city). See section 7.
+    </li>
+    <li>
+      Your theme preference (light/dark) and your cookie choice are stored only in your own browser
+      (local storage) and are not sent to any server.
+    </li>
+  </ul>
+  <p>
+    We do not request sensitive data (health, racial or ethnic origin, political, religious or
+    sexual orientation, biometric data, among others) or data from minors. Please do not include it
+    in the form message.
   </p>
 
-  <h2>Contact</h2>
+  <h2>2. Purposes of processing</h2>
+  <ul>
+    <li>Responding to your contact request and following up on it.</li>
+    <li>
+      If you decide to move forward with a project, the commercial, contractual and technical
+      management of the relationship with your organization.
+    </li>
+    <li>
+      Using your approximate location to put the request in context (time zone, language and
+      geographic coverage of our service).
+    </li>
+    <li>Protecting the form against spam, abuse and automated submissions.</li>
+    <li>Producing aggregate site usage statistics to improve it.</li>
+  </ul>
+  <p>We do not sell your data or share it with third parties for advertising purposes.</p>
+
+  <h2>3. Authorization</h2>
   <p>
-    For requests related to your personal data, write to us at <a href="mailto:hola@siscodex.com"
-      >hola@siscodex.com</a
-    >.
+    By checking the authorization box and submitting the contact form, you grant your prior, express
+    and informed authorization for the processing of your data under this policy. We keep a record
+    of that authorization (date, time and submitted data) as proof, as required by law.
+  </p>
+
+  <h2>4. Data processors and international transfers</h2>
+  <p>
+    To operate the site and the form, some providers process data on behalf of Siscodex, solely to
+    provide their service to us:
+  </p>
+  <ul>
+    <li>
+      <strong>Cloudflare, Inc.</strong> (United States): site hosting, anti-spam verification (Turnstile)
+      and approximate IP geolocation.
+    </li>
+    <li>
+      <strong>Resend</strong> (United States): delivery of the email that notifies us of your request.
+    </li>
+    <li>
+      <strong>Zoho Corporation</strong>: corporate mailbox where we receive and answer your request.
+    </li>
+    <li><strong>Google LLC</strong> (United States): site analytics (Google Analytics 4).</li>
+  </ul>
+  <p>
+    This means your data may be stored or processed outside Colombia. These transfers are made to
+    providers that offer security and confidentiality guarantees, to countries that Colombia's
+    Superintendence of Industry and Commerce considers to have an adequate level of data protection,
+    or under each provider's contractual safeguards.
+  </p>
+
+  <h2>5. Your rights as a data subject</h2>
+  <p>Under article 8 of Law 1581 of 2012, you have the right to:</p>
+  <ul>
+    <li>Know, update and correct your personal data.</li>
+    <li>Request proof of the authorization you granted.</li>
+    <li>Be informed about how your data has been used.</li>
+    <li>
+      Revoke the authorization and/or request deletion of your data when there is no legal or
+      contractual duty to keep it.
+    </li>
+    <li>Access your personal data free of charge.</li>
+    <li>
+      File complaints with the Superintendence of Industry and Commerce (SIC), after completing the
+      inquiry or claim process with Siscodex.
+    </li>
+  </ul>
+
+  <h2>6. How to exercise your rights</h2>
+  <p>
+    Write to <a href={`mailto:${company.privacyEmail}`}>{company.privacyEmail}</a>, including your
+    full name, the email or phone number you contacted us with, and your request. Our data subject
+    support team responds:
+  </p>
+  <ul>
+    <li>
+      <strong>Inquiries</strong> (what data we hold and how we use it): within 10 business days of receipt,
+      extendable by 5 more business days, with notice of the reason.
+    </li>
+    <li>
+      <strong>Claims</strong> (correction, update, deletion or revocation): within 15 business days, extendable
+      by 8 more business days, with notice of the reason. The claim must include your identification,
+      a description of the facts, your contact address and any supporting documents. If it is incomplete,
+      we will ask you to complete it within the following 5 days.
+    </li>
+  </ul>
+
+  <h2 id="cookies">7. Cookies and analytics</h2>
+  <p>
+    This site uses Google Analytics 4, which sets Google first-party cookies (for example,
+    <code>_ga</code>) to tell visits apart and produce aggregate statistics. We do not use
+    advertising cookies.
+  </p>
+  <ul>
+    <li>
+      <strong>They are only enabled with your consent.</strong> When you enter the site we ask whether
+      you accept them; until you do, Google Analytics is not loaded and no data is sent to Google. Rejecting
+      them does not affect the site or the contact form.
+    </li>
+    <li>
+      <strong>You can change your mind at any time</strong> from the "Cookie preferences" link at the
+      bottom of every page. If you withdraw consent, we stop sending data and delete the Google Analytics
+      cookies from your browser.
+    </li>
+    <li>
+      Your choice is remembered for 12 months; after that we ask again. You can also block or delete
+      cookies in your browser settings.
+    </li>
+  </ul>
+
+  <h2>8. Retention and security</h2>
+  <p>
+    We keep your data for as long as needed to handle your request and, if a business relationship
+    arises, for as long as it lasts and for the period required by legal, accounting or contractual
+    obligations. It is deleted afterwards. The site uses an encrypted connection (HTTPS), and access
+    to received requests is restricted to the Siscodex team that handles them.
+  </p>
+
+  <h2>9. Changes to this policy</h2>
+  <p>
+    If we substantially change this policy, we will publish the new version on this page with its
+    updated effective date.
   </p>
 </SimpleContentLayout>

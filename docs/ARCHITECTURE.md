@@ -34,6 +34,8 @@ fe_sscdx/
 │   └── ci.yml                # Cloudflare Pages directo desde el repo, sin Actions de por medio
 ├── docs/
 │   └── ARCHITECTURE.md       # Este documento
+├── functions/                # Cloudflare Pages Functions — backend serverless desplegado con el sitio
+│   └── api/contact.ts        # POST /api/contact (Turnstile + Resend), ver §4.4
 ├── public/                   # Assets servidos tal cual, sin procesar por Vite
 │   ├── favicon.svg
 │   ├── logo.png               # Logo real recortado a su bounding box visible (565×62)
@@ -44,7 +46,7 @@ fe_sscdx/
 │   └── _redirects             # Redirects 301 reales (/servicios, /soluciones) — mismo mecanismo
 ├── src/
 │   ├── components/
-│   │   ├── layout/           # Navbar, Footer — presentes en todas las páginas
+│   │   ├── layout/           # Navbar, Footer, CookieConsent — presentes en todas las páginas
 │   │   ├── sections/         # Bloques de página (Hero, ServiceCard, SpecialtiesTabs, TeamSection, ContactForm...)
 │   │   ├── seo/               # <SEO /> — metadata, OG, Schema.org
 │   │   └── ui/                # Átomos reutilizables (Button, SectionTitle, TechTile, Badge...)
@@ -53,7 +55,8 @@ fe_sscdx/
 │   │   ├── services.ts         # getServices/getAdvantages/getProcessSteps/getProcessCapabilities(locale)
 │   │   ├── projects.ts         # getProjects(locale)
 │   │   ├── technologies.ts     # technologies (sin traducir) + getResources(locale)
-│   │   └── team.ts             # getTeam(locale)
+│   │   ├── team.ts             # getTeam(locale)
+│   │   └── company.ts          # Datos legales del responsable del tratamiento (política de privacidad)
 │   ├── i18n/                   # Ver §9 — diccionario ES/EN, t(), localizedHref(), alternateUrls()
 │   │   ├── types.ts
 │   │   ├── ui.ts
@@ -71,8 +74,11 @@ fe_sscdx/
 │   │   ├── legal/              # Privacidad y términos
 │   │   ├── en/                 # Espejo en inglés de cada página de arriba, mismos slugs (ver §9)
 │   │   └── 404.astro           # Sin versión /en/ — el hosting sirve un solo 404.html, ver §9
+│   ├── emails/                 # Plantillas de correo (HTML + texto, estilos en línea), ver §4.4
+│   │   └── contactNotification.ts
 │   ├── scripts/                # JS de cliente compartido (no components)
-│   │   └── reveal.ts           # Scroll-reveal con la librería "motion"
+│   │   ├── reveal.ts           # Scroll-reveal con la librería "motion"
+│   │   └── analytics.ts        # GA4 condicionado al consentimiento de cookies (ver §5.5)
 │   ├── styles/
 │   │   └── global.css          # Theme de Tailwind v4 (@theme) + estilos base
 │   ├── types/
@@ -251,6 +257,7 @@ Extiende `astro/tsconfigs/strict` y añade:
 | `@fontsource-variable/*` | Tipografía autohospedada: sin petición a Google Fonts CDN, sin banner de cookies/CSP adicional, funciona sin conexión, y una sola familia variable sustituye a múltiples pesos estáticos (menos peso total). |
 | `@astrojs/check` (dev) | Type-checking de `.astro` en CI (`astro check`), corre antes de cada build. |
 | `prettier` + `prettier-plugin-astro` (dev) | Formato consistente en `.astro`, `.ts`, `.css`. |
+| `wrangler` (dev) | CLI de Cloudflare: `npm run dev:cf` levanta el sitio + `functions/` en local igual que en Pages, leyendo el `.env`. No participa del build de producción. |
 
 No se incluyó ningún framework de UI (React/Vue/Svelte) porque ningún componente del sitio
 requiere estado interactivo complejo que justifique su costo en bundle — el menú móvil, el
@@ -338,7 +345,7 @@ contenido nunca se desalinee entre bloques.
 | `TechnologyBadge` | `ui/` | Pill con icono + nombre de tecnología, usado en el stack condensado de Home. |
 | `TechTile` | `ui/` | Tile de tecnología con logo de marca real (`@iconify-json/logos`), usado en el mosaico de `/tecnologia`. |
 | `LanguageSwitcher` | `ui/` | Pastilla "EN"/"ES" en el Navbar — `<a href>` simple (sin JS) al equivalente de la página actual en el otro idioma, ver §9. |
-| `ContactForm` | `sections/` | Formulario controlado, validación HTML nativa, listo para backend (ver §4.4). |
+| `ContactForm` | `sections/` | Validación HTML nativa + JS, widget de Turnstile, envío a `/api/contact` (ver §4.4). |
 | `SectionTitle` | `ui/` | Encabezado de sección (`eyebrow` + `title` + `description`), alineación izquierda o centrada. |
 | `Button` | `ui/` | Renderiza `<a>` o `<button>` según reciba `href`; variantes `primary`/`secondary`/`ghost`; envuelve `href` en `withBase()`. |
 | `StatusPill` | `ui/` | Badge con punto pulsante, usado como "eyebrow" en Hero/PageHeader. |
@@ -421,23 +428,56 @@ del sector salud (una plataforma para un banco digital de tejidos) se generaliza
 `CLAUDE.md` punto 15. Añadir una especialidad nueva es una entrada más en el array, sin cambios de
 componente, siempre que respete la interfaz `Project` en `src/types/index.ts`.
 
-### 4.4 Formulario de contacto — envía correo real (vía Formspree, temporal)
+### 4.4 Formulario de contacto — Pages Function + Turnstile + Resend
 
-`ContactForm.astro` valida en el navegador (HTML5 + JS) y en el `submit` hace un `fetch` directo a
-`PUBLIC_CONTACT_ENDPOINT` — un formulario de **Formspree** (cuenta `siscodex.team@gmail.com`, plan
-gratis), sin backend propio. Es explícitamente una solución **temporal** mientras se monta el
-correo corporativo en Zoho Mail: cuando esté listo, la migración natural es escribir la lógica de
-envío contra la API de Zoho (sí soporta múltiples destinatarios sin restricción de plan, a
-diferencia del free tier de Formspree que solo admite 1 email de notificación).
+Flujo completo:
 
-**Se intentó primero con Cloudflare Pages Functions + Cloudflare Email Routing** (`send_email`
-binding) — se llegó a implementar completo, pero se descartó sin llegar a producción: el tipo de
-binding "Send Email" **no aparece** en la lista de bindings disponibles para Pages Functions en el
-dashboard de Cloudflare (confirmado en pantalla — solo Analytics Engine, D1, Durable Objects, KV,
-Queues, R2, Vectorize, Workers AI, etc.). Aparenta ser exclusivo de Workers vía Wrangler CLI, no
-expuesto para proyectos de Pages conectados por Git como este. Si Cloudflare lo agrega a Pages en
-el futuro, no vale la pena reintentarlo sin verificar primero que la opción exista en el
-dashboard — ver `CLAUDE.md` punto 25 para el relato completo de por qué se abandonó.
+1. `ContactForm.astro` valida en el navegador (HTML5 + JS) y renderiza el widget de **Turnstile**
+   (antispam de Cloudflare) en modo explícito — el script de `challenges.cloudflare.com` se carga
+   una sola vez aunque haya navegaciones con `<ClientRouter />`. El widget agrega un input oculto
+   `cf-turnstile-response` con un token de un solo uso.
+2. En el `submit`, un `fetch` POST (JSON) a `/api/contact` — mismo dominio, sin CORS.
+3. `functions/api/contact.ts` (Pages Function, corre en Cloudflare, no en el navegador) revalida
+   todo, porque el endpoint es público: `Origin` del mismo host, tamaño del body, honeypot
+   (`website` lleno → responde éxito sin enviar), campos con los mismos límites/patrones que el
+   formulario, y el token contra `siteverify` de Turnstile con `TURNSTILE_SECRET_KEY`.
+4. Envía por la API HTTP de **Resend**: `from` = `CONTACT_FROM`, `to` = `CONTACT_TO` (lista
+   separada por coma — la API no deja elegir destinatario, así que no sirve como relay de spam),
+   `reply_to` = el email del visitante (responder desde Zoho le llega directo a la persona).
+5. Responde `{ ok: true }` o `{ ok: false, error }` con `invalid_request` / `invalid_fields` /
+   `captcha_failed` / `send_failed` / `server_misconfigured`; el cliente muestra el mensaje
+   traducido correspondiente (`contact.status.*` en `ui.ts`) y resetea el widget (el token ya se
+   gastó).
+
+La plantilla vive en `src/emails/contactNotification.ts` (subject, HTML y texto plano). HTML de
+correo "clásico": tablas, estilos en línea y colores en hex copiados de los tokens de
+`global.css` (los clientes de correo no soportan variables CSS) — excepción documentada a la
+"Regla de oro" de `CLAUDE.md`. Todo valor del usuario pasa por `escapeHtml()`. La notificación es
+siempre en español (es para el equipo interno) e indica el idioma del sitio desde el que se envió
+y la **ubicación aproximada** del visitante (ciudad, región, país), que la función toma de
+`request.cf` — la geolocalización por IP que Cloudflare adjunta a cada petición, sin campos extra
+en el formulario ni servicios externos. Es aproximada (VPN, redes corporativas o móviles la
+desvían) y el correo lo indica.
+
+**Autorización de tratamiento de datos (Ley 1581 de 2012)**: el formulario tiene una casilla
+obligatoria `privacyConsent` que enlaza a `/legal/privacidad`. La función rechaza el envío sin ella
+(`invalid_fields`), y la plantilla registra la constancia con la fecha de vigencia de la política
+aceptada (`company.privacyPolicyEffectiveDate` en `src/data/company.ts`) — ese correo es la prueba
+de la autorización que exige la ley. Cualquier dato nuevo que recopile el formulario o proveedor
+nuevo que lo procese debe reflejarse en la política (ES y EN) — ver `CLAUDE.md` punto 27.
+
+**Por qué esta combinación** (y no Cloudflare Email Routing, Formspree ni la API de Zoho): ver
+[`ENVIO-DE-CORREOS.md`](ENVIO-DE-CORREOS.md) (comparación de opciones) y `CLAUDE.md` puntos 25 y 26. Resumen: Email Routing choca con los MX de Zoho Mail y su binding no
+existe en Pages Functions; Cloudflare Email Sending cuesta 5 USD/mes y está en beta; Formspree
+gratis solo admite un destinatario y el honeypot quedaba solo en el cliente; Zoho gratis no tiene
+SMTP/API de envío.
+
+**Local**: `npm run dev` no ejecuta `functions/`. `npm run dev:cf` hace `astro build` +
+`wrangler pages dev dist` en `http://localhost:8788`, y wrangler lee el `.env` de la raíz (el mismo
+que usa Astro) y se lo pasa a la función como `env`. `.env.example` trae las claves de prueba
+oficiales de Turnstile (siempre pasan); para probar el envío real hace falta una `RESEND_API_KEY`,
+y con `CONTACT_FROM` en `onboarding@resend.dev` Resend solo entrega al correo dueño de la cuenta
+hasta verificar el dominio.
 
 ---
 
@@ -497,18 +537,27 @@ PNG/JPG de 1200×630 diseñado por el equipo de marca, manteniendo la misma ruta
 ### 5.5 Analytics
 
 Google Analytics 4 (cuenta `siscodex.team@gmail.com`, propiedad "Siscodex Web") vía `gtag.js`,
-cargado en `BaseLayout.astro` — cubre las 22 páginas ES/EN sin duplicación, igual que el resto de
-lo que vive en el layout compartido. Puntos clave de la implementación:
+**solo con consentimiento de cookies**. `src/scripts/analytics.ts` (inicializado una vez desde el
+script de `BaseLayout.astro`) inyecta `gtag.js` únicamente cuando el visitante acepta en el banner
+`CookieConsent.astro` (o ya había aceptado antes); sin consentimiento no se hace ninguna petición a
+Google. Puntos clave de la implementación:
 
 - **Gate por variable de entorno** (`PUBLIC_GA_MEASUREMENT_ID`, ver [§7.6](#76-variables-de-entorno)):
-  si no está seteada, ni el script externo ni el inline se renderizan — así un build local o un
-  deploy de preview no manda datos a la propiedad de producción.
+  si no está seteada, ni el banner ni el enlace "Preferencias de cookies" del Footer se renderizan
+  y `analytics.ts` no hace nada — así un build local o un deploy de preview no manda datos a la
+  propiedad de producción.
+- **Consentimiento** (Ley 1581 + RGPD para visitantes de la UE): elección en `localStorage`
+  (`siscodex:cookie-consent`), vence a los 12 meses; botones "Aceptar"/"Rechazar" con el mismo
+  peso visual; reabrible desde el Footer; revocar pone `ga-disable-<ID>` y borra las cookies
+  `_ga*`. Consecuencia esperada: GA4 registra menos visitas que antes (solo quienes aceptan).
+  Ver `CLAUDE.md` punto 28.
 - **`page_view` manual, no automático**: `gtag("config", ..., { send_page_view: false })` en vez
   del comportamiento por defecto. Con `<ClientRouter />` (View Transitions) las navegaciones no
   recargan el documento, así que el `page_view` automático de `config` solo dispararía una vez, en
   la carga inicial — el resto de la navegación quedaría invisible para GA. En su lugar, se manda
-  `gtag("event", "page_view", {...})` en cada `astro:page-load`, el mismo evento que ya usa
-  `initScrollReveal` para reengancharse tras cada transición — un patrón, dos consumidores.
+  `gtag("event", "page_view", {...})` en cada `astro:page-load` (si hay consentimiento), el mismo
+  evento que ya usa `initScrollReveal` para reengancharse tras cada transición. Si el visitante
+  acepta a mitad de una página, el banner manda el `page_view` de esa página al aceptar.
 - **CSP real** (`public/_headers`, ver [§7.1](#71-cloudflare-pages-actual)): tuvo que ampliarse
   `script-src`/`img-src`/`connect-src` para permitir `googletagmanager.com`,
   `google-analytics.com` y `analytics.google.com`. Sin esto el script carga pero el navegador
@@ -613,6 +662,12 @@ build en cada push:
    meta tag el navegador ignora).
 5. `/servicios` y `/soluciones` redirigen 301 real vía `public/_redirects`, no como página de
    meta-refresh (ver [§2.1](#21-astroconfigmjs)).
+6. `functions/` se despliega sola junto al sitio (Pages Functions, plan Workers Free: 100.000
+   ejecuciones/día; los archivos estáticos no cuentan). El formulario necesita además, fuera del
+   repo: el widget de Turnstile (dashboard → Turnstile, hostname `siscodex.com`), el dominio
+   verificado en Resend (registros DNS en Cloudflare), las variables de §7.6, y una regla de rate
+   limiting en Security → WAF para `/api/contact` (el plan gratis incluye una). El CSP de
+   `public/_headers` ya permite `challenges.cloudflare.com` en `script-src` y `frame-src`.
 
 Ver `CLAUDE.md` → "Historial de decisiones" (punto 23) para el porqué de la migración desde
 GitHub Pages y los detalles operativos de cómo se hizo.
@@ -639,7 +694,8 @@ HTTP custom ni redirects HTTP reales — ver §7.1. Si algún día hace falta vo
 1. Importar el repositorio en Vercel — el framework preset "Astro" se detecta automáticamente
    (build command `npm run build`, output `dist`). No requiere configuración adicional.
 2. Definir `PUBLIC_BASE_PATH=/` (o dejarlo sin definir; el default en `astro.config.mjs` ya es
-   `/`) y, cuando exista, `PUBLIC_CONTACT_ENDPOINT` en Environment Variables.
+   `/`) en Environment Variables. Ojo: `functions/` es específico de Cloudflare Pages — en Vercel
+   el formulario necesitaría portar `functions/api/contact.ts` a una Vercel Function.
 3. Cada push a la rama configurada genera un deployment; los PRs obtienen preview URLs
    automáticas.
 
@@ -669,18 +725,34 @@ HTTP custom ni redirects HTTP reales — ver §7.1. Si algún día hace falta vo
 
 ### 7.6 Variables de entorno
 
-Ver `.env.example` — ninguna es obligatoria para build o dev local. Todas llevan prefijo `PUBLIC_`
-(convención de Astro para exponerlas al cliente) porque el sitio sigue sin backend propio.
+Ver `.env.example` (plantilla versionada; copiar a `.env`, que git ignora). Ninguna es obligatoria
+para `npm run dev`/`npm run build`. Hay dos tipos:
+
+**Públicas (`PUBLIC_*`)** — Astro las lee en el **build** y pueden terminar en el HTML/JS:
 
 - `PUBLIC_BASE_PATH`: histórica, para un escenario de subruta que ya no aplica (ver §7.2).
 - `PUBLIC_GA_MEASUREMENT_ID`: sin ella no se carga Analytics, ver [§5.5](#55-analytics).
-- `PUBLIC_CONTACT_ENDPOINT`: endpoint de Formspree del formulario de contacto, ver
-  [§4.4](#44-formulario-de-contacto--envía-correo-real-vía-formspree-temporal). Sin ella el
-  formulario falla silenciosamente al hacer submit.
+- `PUBLIC_TURNSTILE_SITE_KEY`: site key del widget de Turnstile (pública por diseño). Sin ella el
+  widget no se renderiza y el formulario muestra el error de verificación al enviar.
 
-Todas se definen solo en Cloudflare Pages → Settings → Environment variables → **Production**
-(nunca en un `.env` commiteado ni en Preview, para no mezclar tráfico de PRs con datos/métricas
-reales).
+**Secretas/de servidor (sin prefijo)** — solo las lee la Pages Function en **runtime** vía
+`context.env`; Astro nunca las mete en el bundle:
+
+- `RESEND_API_KEY` (tipo *Secret*) y `TURNSTILE_SECRET_KEY` (tipo *Secret*).
+- `CONTACT_TO`: destinatarios separados por coma (`contacto@siscodex.com`, ...). Cambiarla solo
+  requiere editar la variable y redesplegar, sin tocar código.
+- `CONTACT_FROM`: remitente en un dominio verificado en Resend (`Siscodex Web <web@siscodex.com>`).
+
+Sin alguna de las cuatro, `/api/contact` responde `server_misconfigured` (500) y lo registra en
+los logs de la función.
+
+En producción se definen en Cloudflare Pages → Settings → **Variables and Secrets**, entorno
+**Production** — nunca en un `.env` commiteado. No se definen en Preview a propósito (no mezclar
+tráfico de PRs con métricas/correos reales), así que en un deploy de preview el formulario no envía;
+para probarlo ahí, agregarlas también en Preview y sumar el hostname `*.pages.dev` del proyecto al
+widget de Turnstile. En local, `npm run dev:cf` las lee del `.env` (wrangler soporta `.env` de forma
+nativa — no hay script que genere archivos con los valores, a propósito: los secretos nunca se
+escriben en el build).
 
 ---
 
@@ -824,13 +896,14 @@ solo `resources` (los recursos de `/recursos`) tiene `getResources(locale)`.
 
 ### 9.5 El formulario de contacto y los scripts de cliente
 
-`ContactForm.astro` tiene toda su validación en un único `<script>` inline (no un módulo externo),
-con mensajes de error/estado como strings literales. Para traducirlos sin convertir el script en
-un módulo con imports (lo que perdería el acceso directo al DOM sin más fricción), se usa
-`<script define:vars={{ i18n: {...} }}>` — el mecanismo oficial de Astro para inyectar valores
-computados en el servidor dentro de un script de cliente. El frontmatter arma un objeto
-`scriptI18n` con los mensajes ya traducidos vía `t()`, y el script los lee de `i18n.required`,
-`i18n.statusSuccess`, etc., en vez de tener los strings hardcodeados. El array `services` del
+`ContactForm.astro` arma en el frontmatter un objeto `scriptI18n` con los mensajes ya traducidos
+vía `t()` y lo serializa como JSON en el atributo `data-i18n` del `<form>` (junto con
+`data-endpoint`, `data-turnstile-site-key` y `data-locale`). El `<script>` es un módulo
+empaquetado normal (TypeScript, se ejecuta una sola vez) que en cada `astro:page-load` lee esos
+`data-*` del form presente en el DOM — así la página ES y la EN usan sus propios textos sin que el
+script cambie. Antes se usaba `<script is:inline define:vars={{ i18n }}>`, pero con
+`<ClientRouter />` ese script se re-ejecutaba en cada navegación y acumulaba listeners de `submit`
+(envíos duplicados) — ver `CLAUDE.md` punto 26. El array `services` del
 `<select>` también sale de `ui.ts` (`contact.services.*`).
 
 ### 9.6 Selector de idioma
