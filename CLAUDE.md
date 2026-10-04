@@ -8,8 +8,9 @@ duplica.
 ## Qué es esto
 
 Sitio web corporativo de **Siscodex** (siscodex.com): estudio de ingeniería de software
-(desarrollo a medida, cloud, IA). Astro 7 + TypeScript estricto + Tailwind CSS v4, 100% estático,
-sin backend todavía. Inspiración visual: Vercel/Linear/Stripe.
+(desarrollo a medida, cloud, IA). Astro 7 + TypeScript estricto + Tailwind CSS v4, estático salvo
+una sola Cloudflare Pages Function (`functions/api/contact.ts`, el formulario de contacto — ver
+punto 26). Inspiración visual: Vercel/Linear/Stripe.
 
 ## Comandos
 
@@ -18,8 +19,12 @@ npm install
 npm run dev       # http://localhost:4321
 npm run build     # astro check + build de producción en dist/
 npm run preview   # sirve dist/ localmente
+npm run dev:cf    # build + `wrangler pages dev`: sitio + Pages Functions (formulario real) en :8788
 npm run check     # solo type-check
 ```
+
+`npm run dev` (Astro) **no** ejecuta `functions/` — el formulario de contacto solo funciona de
+punta a punta con `npm run dev:cf`, que lee el mismo `.env` (copiar de `.env.example`).
 
 Si `npm install` falla con un ERESOLVE por `typescript`: `@astrojs/check` todavía no soporta
 TypeScript 7.x — mantener `typescript` en `^6.x` en `package.json` (ver historial de este archivo
@@ -32,16 +37,20 @@ src/
 ├── components/
 │   ├── ui/        → átomos sin conocimiento de negocio (Button, SectionTitle, TechnologyBadge, TechTile, StatusPill)
 │   ├── sections/   → bloques de página (Hero, ServiceCard, SpecialtiesTabs, TeamSection, TeamCard, ContactForm, CTASection...)
-│   ├── layout/     → Navbar, Footer (en todas las páginas)
+│   ├── layout/     → Navbar, Footer, CookieConsent (en todas las páginas)
 │   └── seo/        → <SEO /> (metadata, OG, JSON-LD)
-├── data/           → contenido tipado: services.ts, projects.ts, technologies.ts, team.ts, navigation.ts
+├── data/           → contenido tipado: services.ts, projects.ts, technologies.ts, team.ts, navigation.ts, company.ts (datos legales)
 ├── i18n/           → ui.ts (diccionario ES/EN), utils.ts (t(), localizedHref(), alternateUrls()), types.ts (Locale)
 ├── layouts/        → BaseLayout (páginas normales), SimpleContentLayout (legal/recursos)
 ├── pages/          → rutas (file-based routing de Astro) — en/ espeja cada página en inglés
-├── scripts/        → reveal.ts (scroll-reveal con la librería "motion")
+├── scripts/        → reveal.ts (scroll-reveal con "motion"), theme.ts (modo claro), analytics.ts (GA4 con consentimiento)
 ├── styles/         → global.css — AQUÍ VIVE TODO EL SISTEMA DE COLOR/TIPOGRAFÍA (@theme de Tailwind v4)
 ├── types/          → contratos de datos (Service, Project, Technology...)
+├── emails/         → plantillas de correo (contactNotification.ts: HTML + texto de la notificación del formulario)
 └── utils/          → seo.ts (título, canonical, OG)
+
+functions/          → Cloudflare Pages Functions (backend serverless, se despliega con el sitio)
+└── api/contact.ts  → POST /api/contact: valida, verifica Turnstile y envía por Resend
 ```
 
 **Regla de oro**: nunca hardcodear un color hex dentro de un componente `.astro`. Todo pasa por
@@ -49,7 +58,9 @@ los tokens de `src/styles/global.css` (`ink-*`, `brand-*`, `accent-*`). Cambiar 
 es, en teoría, un cambio de un solo archivo — así se hizo el rebrand de cian/violeta a verde (ver
 "Historial de decisiones" abajo). Las únicas excepciones legítimas son archivos que Tailwind no
 procesa: `public/favicon.svg`, `public/og/default.svg` y el `theme-color` en `BaseLayout.astro` —
-si cambia la paleta, esos tres hay que tocarlos a mano.
+si cambia la paleta, esos tres hay que tocarlos a mano. Lo mismo aplica a la plantilla de correo
+`src/emails/contactNotification.ts` (objeto `colors`): los clientes de correo no soportan variables
+CSS, así que ahí los hex son obligatorios.
 
 **Segunda regla de oro**: cualquier `href`/`src` interno que empiece con `/` (rutas de página,
 `/logo.png`, `/favicon.svg`) **debe** pasar por `withBase()` de `src/utils/url.ts`. `Button.astro`
@@ -128,10 +139,12 @@ sin tabla de equivalencias de slugs). Usa el routing i18n nativo de Astro (`i18n
   (`technologies.ts` → `technologies`, sin función) **no se traducen** — son nombres propios.
 - **`Astro.currentLocale`** está disponible en cualquier `.astro` sin pasarlo por props — patrón
   usado en todos partes: `const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;`.
-- **`ContactForm.astro`**: el `<script>` de validación es inline, así que las strings traducidas
-  (mensajes de error, estado de envío) se inyectan con `<script define:vars={{ i18n: {...} }}>`
-  (mecanismo oficial de Astro para pasar valores server-computed a un script de cliente) — el
-  script las lee de `i18n.required`, etc., en vez de tener strings literales.
+- **`ContactForm.astro`**: las strings traducidas del script (mensajes de error, estados de envío)
+  viajan como JSON en `data-i18n` del `<form>`, junto con `data-endpoint`,
+  `data-turnstile-site-key` y `data-locale`; el `<script>` (empaquetado, no `is:inline`) las lee
+  del form actual en cada `astro:page-load`. Antes usaba `<script is:inline define:vars>`, que con
+  `<ClientRouter />` se re-ejecutaba en cada navegación y acumulaba listeners de `submit` — ver
+  punto 26 de "Historial de decisiones".
 - **`LanguageSwitcher.astro`** (pastilla dorada en el Navbar, "EN"/"ES"): es un `<a href>` normal,
   sin JS — calcula la URL equivalente en el otro idioma con `alternateUrls()`/`localizedHref()` de
   `src/i18n/utils.ts`. Al no tener estado de cliente, no hay riesgo de bug de View Transitions
@@ -374,10 +387,12 @@ puro) de una exploración con 3 direcciones + 5 tratamientos de ícono en un Art
     sentido ni confunda a alguien que lo vea "en verde" pensando que ahí está el sitio real. Ver
     "Deployment" arriba para el estado técnico completo.
 24. **Google Analytics 4** (`siscodex.team@gmail.com`, propiedad "Siscodex Web", ID de medición
-    `G-PKMJ32HD6V`): `gtag.js` se carga en `BaseLayout.astro` solo si `PUBLIC_GA_MEASUREMENT_ID`
+    `G-PKMJ32HD6V`): `gtag.js` se carga (hoy desde `src/scripts/analytics.ts` y solo con consentimiento de cookies, ver
+    punto 28) solo si `PUBLIC_GA_MEASUREMENT_ID`
     está seteada — así los builds locales/preview no ensucian las métricas reales; la variable
-    solo existe en Cloudflare Pages → Settings → Environment variables → **Production** (nunca en
-    `.env` ni commiteada). Con `<ClientRouter />` las navegaciones no recargan la página, así que
+    solo existe en Cloudflare Pages → Settings → Environment variables → **Production** (nunca el ID
+    real en `.env` ni commiteado; en local se usa un ID falso como `G-TEST123` para ver el banner del
+    punto 28 sin ensuciar las métricas). Con `<ClientRouter />` las navegaciones no recargan la página, así que
     dejar que `gtag("config", ...)` mande su `page_view` automático solo contaría la carga inicial
     — se usa `send_page_view: false` y en su lugar se manda un evento `page_view` manual en cada
     `astro:page-load` (mismo listener que ya usa `initScrollReveal`), cubriendo carga inicial y
@@ -423,13 +438,28 @@ puro) de una exploración con 3 direcciones + 5 tratamientos de ícono en un Art
 
 ## Pendientes conocidos antes de un lanzamiento real
 
+- **Error de CSP en consola (preexistente, sin impacto visual)**: la variante cirílica de JetBrains
+  Mono pesa < 4 KB y Vite la embebe en el CSS como `data:font/woff2`; el CSP (`font-src 'self'`) la
+  bloquea. El sitio no usa caracteres cirílicos. Arreglo propuesto, no aplicado: que Vite no
+  embeba fuentes (`build.assetsInlineLimit` en `astro.config.mjs`).
+- **Términos de servicio**: hoy solo Alcance / Propiedad intelectual / Contacto. Se propuso (sin
+  implementar) agregar marcas de terceros (los logos de `/tecnologia` no implican alianza),
+  contenido informativo no vinculante, uso aceptable, limitación de responsabilidad, enlaces a
+  terceros, remisión a la política de privacidad, ley aplicable (Colombia) y vigencia; y redactar
+  la propiedad intelectual como "Siscodex y sus fundadores" mientras no exista la sociedad.
 - `public/og/default.svg` es un placeholder generado por código (gradiente + logo + texto).
   Twitter/X no renderiza SVG en `og:image` — sustituir por un PNG/JPG 1200×630 real antes de
   publicar (ver `docs/ARCHITECTURE.md` §5.4).
-- `ContactForm.astro` ya envía correos reales vía Formspree (ver punto 25) — pero es una solución
-  temporal a 1 solo destinatario (`siscodex.team@gmail.com`). Cuando Zoho Mail esté listo, migrar
-  el envío a su API (soporta múltiples destinatarios sin restricción de plan, a diferencia del
-  free tier de Formspree) — no reintentar Cloudflare Email Routing, ver por qué en el punto 25.
+- **Formulario de contacto (punto 26): código listo, falta configuración fuera del repo** —
+  ~~(1) Zoho Mail activo~~ ✅ y ~~(2) dominio verificado en Resend~~ ✅ (octubre 2026, confirmado
+  con `dig`); falta: crear una API key de Resend solo para producción; (3) widget de
+  Turnstile creado en el dashboard de Cloudflare con hostname `siscodex.com`; (4) variables en
+  Cloudflare Pages (ver `docs/ARCHITECTURE.md` §7.6); (5) regla de rate limiting en Cloudflare →
+  Security → WAF (p. ej. 5 peticiones/10 min por IP a `/api/contact`); (6) prueba real en
+  producción y dar de baja el formulario de Formspree (`siscodex.team@gmail.com`).
+- **Política de privacidad (puntos 27 y 29)**: la empresa no está constituida, así que la sección
+  "Responsable del tratamiento" está comentada. Al constituirla: completar `src/data/company.ts`,
+  reactivar la sección y renumerar. Hacerla revisar por un abogado antes de darla por definitiva.
 - `src/data/projects.ts` ya **no** son casos de cliente inventados: son las 5 áreas de
   especialidad reales de Siscodex (Cloud, IA, Móvil, Web, Salud Digital), pensadas como taxonomía
   fija, no como placeholders a reemplazar. Si se agrega una especialidad nueva, mantener la forma
@@ -441,7 +471,8 @@ puro) de una exploración con 3 direcciones + 5 tratamientos de ícono en un Art
   ha revisado un hablante nativo de inglés. Antes de un lanzamiento real, vale la pena una pasada
   de revisión humana, especialmente en el copy de marketing (Hero, WhyUs, especialidades).
 - **El modo claro se implementó y compila sin errores, pero Claude no lo vio en un navegador real**
-  (no hay herramienta de automatización de navegador en este entorno) — los valores de contraste
+  (al implementarlo no había navegador automatizado; desde el punto 28 se sabe que Playwright se
+  puede instalar en el scratchpad y usar sin tocar el repo, así que ya es verificable) — los valores de contraste
   se calcularon a mano, no se verificaron con una herramienta real. Antes de darlo por terminado,
   alguien debería recorrer el sitio completo en modo claro (todas las páginas, ambos idiomas,
   mobile) y revisar especialmente: la tarjeta de equipo (flip 3D), los blobs decorativos de fondo,
@@ -456,7 +487,16 @@ no existe el escenario de subruta que sí aplicaba a GitHub Pages de proyecto. D
 del repo, configurado en su dashboard). `public/_headers` (CSP real con `frame-ancestors`, caché
 inmutable para `/_astro/*`, resto de headers de seguridad) y `public/_redirects` (redirects 301
 reales de `/servicios`/`/soluciones`) — Cloudflare Pages los sirve tal cual, mismo formato que
-Netlify. Ver punto 23 de "Historial de decisiones" para el porqué de la migración.
+Netlify. Ver punto 23 de "Historial de decisiones" para el porqué de la migración. `functions/`
+(Pages Functions) se despliega automáticamente en el mismo push — hoy solo `/api/contact`, que
+necesita las variables `RESEND_API_KEY`, `TURNSTILE_SECRET_KEY`, `CONTACT_TO`, `CONTACT_FROM`
+(runtime) y `PUBLIC_TURNSTILE_SITE_KEY` (build) en Settings → Variables and Secrets.
+
+Build en Cloudflare: `npm run build`, salida `dist`, root vacío (la raíz es obligatoria para que
+detecte `functions/`). **Node**: Cloudflare usa el default de su imagen de build v3 (22.16.0) —
+**no lee `engines` de `package.json`**, solo `NODE_VERSION` o `.nvmrc`/`.node-version`, y el repo no
+tiene ninguno. Astro 7 exige ≥ 22.12, así que hoy compila; el `engines` del `package.json`
+(`>=20.3.0`) está desactualizado (propuesto, no aplicado: `.nvmrc` con `22` y `engines` ≥ 22.12).
 
 GitHub Pages **ya no se usa** (decomisionado: se borró `.github/workflows/deploy.yml`,
 `public/CNAME`, y se deshabilitó Pages en la configuración del repo) — si aparece cualquiera de

@@ -1,32 +1,220 @@
 ---
 import SimpleContentLayout from "@/layouts/SimpleContentLayout.astro";
+import { company } from "@/data/company";
+
+// Estructura según el art. 13 del Decreto 1377 de 2013 (contenido mínimo de la
+// política de tratamiento). Cada dato que se recopila o proveedor que se agrega
+// al sitio debe reflejarse acá y en en/legal/privacidad.astro — ver CLAUDE.md
+// punto 27.
+const effectiveDate = new Intl.DateTimeFormat("es-CO", {
+  dateStyle: "long",
+  timeZone: "UTC",
+}).format(new Date(company.privacyPolicyEffectiveDate));
+// Datos legales que faltan en src/data/company.ts: se muestra entre paréntesis
+// lo que hay que poner, para que el hueco sea visible (y no desaparezca en
+// silencio) hasta que se complete — ver CLAUDE.md punto 27.
+const pending = {
+  legalName:
+    "(Razón social exacta, tal como figura en el RUT o el certificado de Cámara de Comercio)",
+  nit: "(NIT de la empresa con dígito de verificación, ej. 901.234.567-8)",
+  city: "(Ciudad y departamento del domicilio principal, ej. Cúcuta, Norte de Santander)",
+  address: "(Dirección física de notificaciones de la empresa)",
+  phone: "(Teléfono de contacto de la empresa, con indicativo, ej. +57 300 000 0000)",
+};
+const domicile = `${company.city || pending.city}, ${company.country.es}`;
 ---
 
 <SimpleContentLayout
   eyebrow="Legal"
   title="Política de privacidad"
-  intro="Cómo Siscodex recopila, usa y protege la información de quienes visitan este sitio o contratan nuestros servicios."
-  description="Política de privacidad de Siscodex."
+  intro="Cómo Siscodex recopila, usa y protege la información de quienes visitan este sitio o nos escriben a través del formulario de contacto."
+  description="Política de privacidad y tratamiento de datos personales de Siscodex, conforme a la Ley 1581 de 2012."
   path="/legal/privacidad"
 >
-  <h2>Datos que recopilamos</h2>
+  <p>Vigente desde el {effectiveDate}.</p>
+
+  {/*
+    SECCIÓN DESACTIVADA A PROPÓSITO: Siscodex aún no está constituida legalmente,
+    así que no hay razón social, NIT ni domicilio que publicar (CLAUDE.md punto 29).
+    Al constituir la empresa: completar src/data/company.ts, quitar este comentario
+    (en esta página y en en/legal/privacidad.astro) y volver a numerar las secciones
+    desde 1 = "Responsable del tratamiento" (+1 a todas, y "Ver la sección 7" → 8).
+  <h2>1. Responsable del tratamiento</h2>
+  <ul>
+    <li><strong>Razón social:</strong> {company.legalName || pending.legalName}</li>
+    <li><strong>NIT:</strong> {company.nit || pending.nit}</li>
+    <li><strong>Domicilio:</strong> {domicile}</li>
+    <li><strong>Dirección:</strong> {company.address || pending.address}</li>
+    <li><strong>Teléfono:</strong> {company.phone || pending.phone}</li>
+    <li>
+      <strong>Correo para asuntos de datos personales:</strong>
+      <a href={`mailto:${company.privacyEmail}`}>{company.privacyEmail}</a>
+    </li>
+  </ul>
+  */}
   <p>
-    Únicamente recopilamos la información que envías voluntariamente a través de nuestro formulario de contacto
-    (nombre, empresa, correo, teléfono y descripción del proyecto). Este sitio no utiliza cookies de seguimiento ni
-    analítica de terceros.
+    Esta política se expide en cumplimiento de la Ley 1581 de 2012, el Decreto 1377 de 2013
+    (compilado en el Decreto 1074 de 2015) y demás normas colombianas sobre protección de datos
+    personales.
   </p>
 
-  <h2>Uso de la información</h2>
+  <h2>1. Datos que recopilamos</h2>
   <p>
-    La información enviada se utiliza exclusivamente para responder a tu solicitud de contacto y, si avanzas con un
-    proyecto, para la gestión comercial y técnica del mismo. No compartimos tus datos con terceros con fines
-    publicitarios.
+    <strong>Los que nos das en el formulario de contacto:</strong> nombre, empresa, correo electrónico,
+    teléfono, servicio de interés y la descripción de tu proyecto.
+  </p>
+  <p><strong>Los que se generan automáticamente al enviar el formulario:</strong></p>
+  <ul>
+    <li>
+      <strong>Ubicación aproximada</strong> (ciudad, región y país), deducida de tu dirección IP por nuestro
+      proveedor de infraestructura, Cloudflare. No es tu ubicación exacta: no usamos GPS ni pedimos permiso
+      de ubicación a tu navegador, y puede ser imprecisa si usas VPN, redes corporativas o datos móviles.
+    </li>
+    <li>La fecha y hora del envío y el idioma del sitio desde el que escribiste.</li>
+    <li>
+      Tu dirección IP y señales técnicas del navegador, que usa <strong>Cloudflare Turnstile</strong
+      > para verificar que el envío lo hace una persona y no un programa automatizado. Siscodex no almacena
+      tu dirección IP.
+    </li>
+  </ul>
+  <p><strong>Los que se generan al navegar el sitio:</strong></p>
+  <ul>
+    <li>
+      <strong>Google Analytics 4</strong>, <strong>solo si aceptas las cookies</strong> en el aviso que
+      aparece al entrar al sitio: mide de forma agregada cómo se usa el sitio (páginas visitadas, duración
+      de la visita, tipo de dispositivo, país o ciudad aproximados). Ver la sección 7.
+    </li>
+    <li>
+      Tus preferencias de tema (claro/oscuro) y tu elección sobre las cookies se guardan solo en tu
+      propio navegador (almacenamiento local) y no se envían a ningún servidor.
+    </li>
+  </ul>
+  <p>
+    No solicitamos datos sensibles (salud, origen racial o étnico, orientación política, religiosa o
+    sexual, datos biométricos, entre otros) ni datos de menores de edad. Te pedimos no incluirlos en
+    el mensaje del formulario.
   </p>
 
-  <h2>Contacto</h2>
+  <h2>2. Finalidades del tratamiento</h2>
+  <ul>
+    <li>Responder tu solicitud de contacto y darle seguimiento.</li>
+    <li>
+      Si decides avanzar con un proyecto, la gestión comercial, contractual y técnica de la relación
+      con tu organización.
+    </li>
+    <li>
+      Usar tu ubicación aproximada para contextualizar la solicitud (zona horaria, idioma y
+      cobertura geográfica de la atención).
+    </li>
+    <li>Proteger el formulario contra spam, abuso y envíos automatizados.</li>
+    <li>Elaborar estadísticas agregadas de uso del sitio para mejorarlo.</li>
+  </ul>
+  <p>No vendemos tus datos ni los compartimos con terceros con fines publicitarios.</p>
+
+  <h2>3. Autorización</h2>
   <p>
-    Para solicitudes relacionadas con tus datos personales, escríbenos a <a href="mailto:hola@siscodex.com"
-      >hola@siscodex.com</a
-    >.
+    Al marcar la casilla de autorización y enviar el formulario de contacto, otorgas tu autorización
+    previa, expresa e informada para el tratamiento de tus datos conforme a esta política.
+    Conservamos constancia de esa autorización (fecha, hora y datos enviados) como prueba, según lo
+    exige la ley.
+  </p>
+
+  <h2>4. Encargados del tratamiento y transferencia internacional</h2>
+  <p>
+    Para operar el sitio y el formulario, algunos proveedores tratan datos por cuenta de Siscodex,
+    únicamente para prestarnos su servicio:
+  </p>
+  <ul>
+    <li>
+      <strong>Cloudflare, Inc.</strong> (Estados Unidos): alojamiento del sitio, verificación antispam
+      (Turnstile) y geolocalización aproximada por IP.
+    </li>
+    <li>
+      <strong>Resend</strong> (Estados Unidos): envío del correo que nos notifica tu solicitud.
+    </li>
+    <li>
+      <strong>Zoho Corporation</strong>: buzón de correo corporativo donde recibimos y respondemos
+      tu solicitud.
+    </li>
+    <li><strong>Google LLC</strong> (Estados Unidos): analítica del sitio (Google Analytics 4).</li>
+  </ul>
+  <p>
+    Esto implica que tus datos pueden almacenarse o procesarse fuera de Colombia. Estas
+    transmisiones se realizan con proveedores que ofrecen garantías de seguridad y confidencialidad,
+    hacia países que la Superintendencia de Industria y Comercio considera con un nivel adecuado de
+    protección de datos, o bajo las garantías contractuales de cada proveedor.
+  </p>
+
+  <h2>5. Tus derechos como titular</h2>
+  <p>De acuerdo con el artículo 8 de la Ley 1581 de 2012, tienes derecho a:</p>
+  <ul>
+    <li>Conocer, actualizar y rectificar tus datos personales.</li>
+    <li>Solicitar prueba de la autorización que otorgaste.</li>
+    <li>Ser informado sobre el uso que se ha dado a tus datos.</li>
+    <li>
+      Revocar la autorización y/o solicitar la supresión de tus datos cuando no exista un deber
+      legal o contractual de conservarlos.
+    </li>
+    <li>Acceder gratuitamente a tus datos personales.</li>
+    <li>
+      Presentar quejas ante la Superintendencia de Industria y Comercio (SIC), una vez agotado el
+      trámite de consulta o reclamo ante Siscodex.
+    </li>
+  </ul>
+
+  <h2>6. Cómo ejercer tus derechos</h2>
+  <p>
+    Escríbenos a <a href={`mailto:${company.privacyEmail}`}>{company.privacyEmail}</a>, indicando tu
+    nombre completo, el correo o teléfono con el que te comunicaste con nosotros, y tu solicitud.
+    Nuestro equipo de atención a titulares responde:
+  </p>
+  <ul>
+    <li>
+      <strong>Consultas</strong> (qué datos tenemos y cómo los usamos): en un máximo de 10 días hábiles
+      desde su recepción, prorrogables por 5 días hábiles más, informándote el motivo.
+    </li>
+    <li>
+      <strong>Reclamos</strong> (corrección, actualización, supresión o revocatoria): en un máximo de
+      15 días hábiles, prorrogables por 8 días hábiles más, informándote el motivo. El reclamo debe incluir
+      tu identificación, la descripción de los hechos, tu dirección de contacto y los documentos que quieras
+      hacer valer. Si está incompleto, te pediremos completarlo dentro de los 5 días siguientes.
+    </li>
+  </ul>
+
+  <h2 id="cookies">7. Cookies y analítica</h2>
+  <p>
+    Este sitio usa Google Analytics 4, que instala cookies propias de Google (por ejemplo,
+    <code>_ga</code>) para distinguir visitas y generar estadísticas agregadas. No usamos cookies
+    con fines publicitarios.
+  </p>
+  <ul>
+    <li>
+      <strong>Solo se activan con tu consentimiento.</strong> Al entrar al sitio te preguntamos si las
+      aceptas; hasta que aceptes, Google Analytics no se carga y no se envía ningún dato a Google. Rechazarlas
+      no afecta el funcionamiento del sitio ni del formulario de contacto.
+    </li>
+    <li>
+      <strong>Puedes cambiar de opinión cuando quieras</strong> desde el enlace "Preferencias de cookies"
+      al pie de cada página. Si retiras el consentimiento, dejamos de enviar datos y borramos las cookies
+      de Google Analytics de tu navegador.
+    </li>
+    <li>
+      Tu elección se recuerda durante 12 meses; después te volvemos a preguntar. También puedes
+      bloquear o borrar las cookies desde la configuración de tu navegador.
+    </li>
+  </ul>
+
+  <h2>8. Conservación y seguridad</h2>
+  <p>
+    Conservamos tus datos durante el tiempo necesario para atender tu solicitud y, si surge una
+    relación comercial, mientras ella dure y por el tiempo que exijan las obligaciones legales,
+    contables o contractuales. Después se eliminan. El sitio usa conexión cifrada (HTTPS) y el
+    acceso a las solicitudes recibidas está restringido al equipo de Siscodex que las atiende.
+  </p>
+
+  <h2>9. Cambios a esta política</h2>
+  <p>
+    Si modificamos esta política de forma sustancial, publicaremos la nueva versión en esta página
+    con su fecha de vigencia actualizada.
   </p>
 </SimpleContentLayout>

@@ -1,12 +1,18 @@
 ---
 import { Icon } from "astro-icon/components";
 import Button from "@/components/ui/Button.astro";
-import { useTranslations } from "@/i18n/utils";
+import { localizedHref, useTranslations } from "@/i18n/utils";
 import { DEFAULT_LOCALE, type Locale } from "@/i18n/types";
+import { withBase } from "@/utils/url";
 
 const locale = (Astro.currentLocale as Locale | undefined) ?? DEFAULT_LOCALE;
 const t = useTranslations(locale);
-const contactEndpoint = import.meta.env.PUBLIC_CONTACT_ENDPOINT;
+// El envío lo hace la Pages Function de functions/api/contact.ts (Turnstile +
+// Resend) — ver CLAUDE.md § Formulario de contacto. La site key de Turnstile es
+// pública por diseño; la clave secreta solo existe del lado de la función.
+const contactEndpoint = withBase("/api/contact");
+const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
+const privacyHref = withBase(localizedHref("/legal/privacidad", locale));
 
 const services = [
   t("contact.services.custom"),
@@ -23,8 +29,11 @@ const scriptI18n = {
   phonePattern: t("contact.error.phonePattern"),
   minLength: t("contact.error.minLength"),
   generic: t("contact.error.generic"),
+  consent: t("contact.error.consent"),
   statusSuccess: t("contact.status.success"),
   statusError: t("contact.status.error"),
+  statusCaptcha: t("contact.status.captcha"),
+  statusSendError: t("contact.status.sendError"),
   submitLabel: t("contact.form.submit"),
   submittingLabel: t("contact.form.submitting"),
 };
@@ -43,12 +52,20 @@ const inputClasses =
   <div class="relative mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
     <div class="rounded-xl border border-ink-700 bg-ink-800/40 p-6 backdrop-blur-xl sm:p-10">
       <!--
-        Envía directo a Formspree (PUBLIC_CONTACT_ENDPOINT) — solución
-        temporal mientras se monta el correo corporativo en Zoho, ver
-        CLAUDE.md § Historial de decisiones. Sin backend propio: el
-        honeypot ("website") solo se valida acá, del lado del cliente.
+        Envía a la Pages Function /api/contact (functions/api/contact.ts), que
+        revalida todo del lado del servidor (campos, honeypot, token de
+        Turnstile) y manda la notificación por Resend a CONTACT_TO.
       -->
-      <form id="contact-form" class="grid grid-cols-1 gap-5 sm:grid-cols-2" novalidate>
+      <form
+        id="contact-form"
+        class="grid grid-cols-1 gap-5 sm:grid-cols-2"
+        novalidate
+        data-contact-form
+        data-endpoint={contactEndpoint}
+        data-turnstile-site-key={turnstileSiteKey}
+        data-locale={locale}
+        data-i18n={JSON.stringify(scriptI18n)}
+      >
         <div class="hidden" aria-hidden="true">
           <label for="website">{t("contact.form.honeypotLabel")}</label>
           <input id="website" name="website" type="text" tabindex="-1" autocomplete="off" />
@@ -162,7 +179,36 @@ const inputClasses =
           <p id="message-error" data-error-for="message" class="hidden text-xs text-danger-400" role="alert"></p>
         </div>
 
+        <!--
+          Autorización de tratamiento de datos (Ley 1581 de 2012: previa, expresa e
+          informada). Obligatoria — la función la revalida y deja constancia en el
+          correo de notificación, que sirve como prueba de la autorización.
+        -->
+        <div class="flex flex-col gap-2 sm:col-span-2">
+          <div class="flex items-start gap-3">
+            <input
+              id="privacyConsent"
+              name="privacyConsent"
+              type="checkbox"
+              required
+              aria-required="true"
+              aria-invalid="false"
+              aria-describedby="privacyConsent-error"
+              class="mt-0.5 size-4 shrink-0 cursor-pointer accent-brand-400 aria-[invalid=true]:outline-2 aria-[invalid=true]:outline-offset-2 aria-[invalid=true]:outline-danger-400"
+            />
+            <label for="privacyConsent" class="cursor-pointer text-sm leading-relaxed text-ink-300">
+              {t("contact.form.consentLabel")}
+              <a href={privacyHref} target="_blank" rel="noopener" class="text-brand-400 underline-offset-2 hover:underline"
+                >{t("contact.form.consentLink")}</a
+              >. *
+            </label>
+          </div>
+          <p id="privacyConsent-error" data-error-for="privacyConsent" class="hidden text-xs text-danger-400" role="alert"></p>
+        </div>
+
         <div class="sm:col-span-2">
+          <!-- Turnstile (antispam de Cloudflare) se renderiza acá desde el script; agrega solo el input oculto cf-turnstile-response. -->
+          <div data-turnstile-container class="mb-4 min-h-[65px]"></div>
           <Button type="submit" size="lg" class="w-full justify-center">
             <Icon name="lucide:loader-2" class="hidden size-4 animate-spin" data-submit-spinner />
             <span data-submit-label>{t("contact.form.submit")}</span>
@@ -174,34 +220,120 @@ const inputClasses =
   </div>
 </section>
 
-<script is:inline define:vars={{ i18n: scriptI18n, contactEndpoint }}>
-  document.addEventListener("astro:page-load", () => {
-    const form = document.getElementById("contact-form");
-    const status = document.querySelector("[data-form-status]");
-    const submitButton = form?.querySelector('button[type="submit"]');
-    const submitLabel = form?.querySelector("[data-submit-label]");
-    const submitSpinner = form?.querySelector("[data-submit-spinner]");
-    if (!form || !status) return;
 
-    const requiredFieldNames = ["name", "company", "email", "phone", "service", "message"];
+<script>
+  // Script empaquetado (no is:inline): Astro lo ejecuta una sola vez aunque haya
+  // navegaciones con <ClientRouter />. Toda la configuración por página (textos
+  // ES/EN, endpoint, site key) se lee de los data-* del <form> actual en cada
+  // astro:page-load, y data-contact-ready evita enlazar dos veces el mismo form
+  // — con el is:inline + define:vars anterior, cada navegación sumaba otro
+  // listener de submit y un solo clic podía mandar el correo varias veces.
 
-    function getField(name) {
-      const field = form?.elements.namedItem(name);
+  interface ContactI18n {
+    required: string;
+    email: string;
+    phonePattern: string;
+    minLength: string;
+    generic: string;
+    consent: string;
+    statusSuccess: string;
+    statusError: string;
+    statusCaptcha: string;
+    statusSendError: string;
+    submitLabel: string;
+    submittingLabel: string;
+  }
+
+  interface TurnstileApi {
+    render: (container: HTMLElement, options: Record<string, unknown>) => string | undefined;
+    reset: (widgetId?: string) => void;
+  }
+
+  type FormField = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+  type StatusKind = "success" | "invalid" | "captcha" | "sendError";
+
+  const TURNSTILE_SRC = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+  const requiredFieldNames = ["name", "company", "email", "phone", "service", "message", "privacyConsent"];
+
+  let turnstileLoader: Promise<TurnstileApi> | null = null;
+
+  function loadTurnstile(): Promise<TurnstileApi> {
+    const existing = (window as unknown as { turnstile?: TurnstileApi }).turnstile;
+    if (existing) return Promise.resolve(existing);
+    turnstileLoader ??= new Promise<TurnstileApi>((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = TURNSTILE_SRC;
+      script.async = true;
+      script.onload = () => {
+        const api = (window as unknown as { turnstile?: TurnstileApi }).turnstile;
+        if (api) resolve(api);
+        else reject(new Error("turnstile_unavailable"));
+      };
+      script.onerror = () => {
+        turnstileLoader = null; // permitir reintentar en la próxima navegación
+        reject(new Error("turnstile_load_failed"));
+      };
+      document.head.appendChild(script);
+    });
+    return turnstileLoader;
+  }
+
+  function setupContactForm(form: HTMLFormElement) {
+    if (form.dataset.contactReady === "true") return;
+    form.dataset.contactReady = "true";
+
+    const i18n = JSON.parse(form.dataset.i18n ?? "{}") as ContactI18n;
+    const endpoint = form.dataset.endpoint ?? "";
+    const siteKey = form.dataset.turnstileSiteKey ?? "";
+    const locale = form.dataset.locale === "en" ? "en" : "es";
+
+    const status = form.querySelector<HTMLElement>("[data-form-status]");
+    const submitButton = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+    const submitLabel = form.querySelector<HTMLElement>("[data-submit-label]");
+    const submitSpinner = form.querySelector<HTMLElement>("[data-submit-spinner]");
+    const turnstileContainer = form.querySelector<HTMLElement>("[data-turnstile-container]");
+
+    let turnstile: TurnstileApi | null = null;
+    let widgetId: string | undefined;
+
+    if (siteKey && turnstileContainer) {
+      loadTurnstile()
+        .then((api) => {
+          // Si el usuario ya navegó a otra página, el form quedó fuera del DOM.
+          if (!turnstileContainer.isConnected) return;
+          turnstile = api;
+          widgetId = api.render(turnstileContainer, {
+            sitekey: siteKey,
+            language: locale,
+            theme: document.documentElement.dataset.theme === "light" ? "light" : "dark",
+            size: "flexible",
+          });
+        })
+        .catch(() => {
+          // Sin Turnstile el servidor rechaza el envío; se informa al intentar enviar.
+        });
+    }
+
+    function getField(name: string): FormField | null {
+      const field = form.elements.namedItem(name);
       return field instanceof HTMLInputElement || field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement
         ? field
         : null;
     }
 
-    function getErrorMessage(field) {
+    function getErrorMessage(field: FormField): string {
       const validity = field.validity;
+      if (validity.valueMissing && field instanceof HTMLInputElement && field.type === "checkbox") return i18n.consent;
       if (validity.valueMissing) return i18n.required;
       if (validity.typeMismatch) return i18n.email;
       if (validity.patternMismatch) return i18n.phonePattern;
-      if (validity.tooShort) return i18n.minLength.replace("{min}", String(field.minLength));
+      if (validity.tooShort && field instanceof HTMLTextAreaElement) {
+        return i18n.minLength.replace("{min}", String(field.minLength));
+      }
       return field.validationMessage || i18n.generic;
     }
 
-    function validateField(field) {
+    function validateField(field: FormField): boolean {
       const isValid = field.checkValidity();
       field.setAttribute("aria-invalid", String(!isValid));
       const errorEl = document.getElementById(`${field.name}-error`);
@@ -216,29 +348,43 @@ const inputClasses =
       const field = getField(name);
       if (!field) return;
       field.addEventListener("blur", () => validateField(field));
-      const liveEvent = field instanceof HTMLSelectElement ? "change" : "input";
+      const usesChange = field instanceof HTMLSelectElement || (field instanceof HTMLInputElement && field.type === "checkbox");
+      const liveEvent = usesChange ? "change" : "input";
       field.addEventListener(liveEvent, () => {
         if (field.getAttribute("aria-invalid") === "true") validateField(field);
       });
     });
 
-    function setLoading(isLoading) {
+    function setLoading(isLoading: boolean) {
       if (submitButton) submitButton.disabled = isLoading;
       submitSpinner?.classList.toggle("hidden", !isLoading);
       if (submitLabel) submitLabel.textContent = isLoading ? i18n.submittingLabel : i18n.submitLabel;
     }
 
-    function showStatus(kind) {
+    function showStatus(kind: StatusKind) {
       if (!status) return;
-      status.textContent = kind === "success" ? i18n.statusSuccess : i18n.statusError;
+      const messages: Record<StatusKind, string> = {
+        success: i18n.statusSuccess,
+        invalid: i18n.statusError,
+        captcha: i18n.statusCaptcha,
+        sendError: i18n.statusSendError,
+      };
+      const isSuccess = kind === "success";
+      status.textContent = messages[kind];
       status.classList.remove("hidden", "text-brand-300", "text-danger-400");
-      status.classList.add(kind === "success" ? "text-brand-300" : "text-danger-400");
-      status.setAttribute("role", kind === "success" ? "status" : "alert");
+      status.classList.add(isSuccess ? "text-brand-300" : "text-danger-400");
+      status.setAttribute("role", isSuccess ? "status" : "alert");
     }
 
-    form.addEventListener("submit", (event) => {
+    function resetTurnstile() {
+      // Cada token sirve para una sola verificación: después de cualquier
+      // intento (exitoso o no) hay que pedir uno nuevo.
+      if (turnstile && widgetId !== undefined) turnstile.reset(widgetId);
+    }
+
+    form.addEventListener("submit", async (event) => {
       event.preventDefault();
-      status.classList.add("hidden");
+      status?.classList.add("hidden");
 
       const honeypot = getField("website");
       if (honeypot && honeypot.value.trim() !== "") {
@@ -248,7 +394,7 @@ const inputClasses =
         return;
       }
 
-      let firstInvalid = null;
+      let firstInvalid: FormField | null = null;
       requiredFieldNames.forEach((name) => {
         const field = getField(name);
         if (!field) return;
@@ -257,39 +403,53 @@ const inputClasses =
       });
 
       if (firstInvalid) {
-        firstInvalid.focus();
-        showStatus("error");
+        (firstInvalid as FormField).focus();
+        showStatus("invalid");
         return;
       }
 
-      if (!contactEndpoint) {
-        showStatus("error");
+      const formData = new FormData(form);
+      const token = formData.get("cf-turnstile-response");
+      if (typeof token !== "string" || token === "") {
+        showStatus("captcha");
         return;
       }
 
       setLoading(true);
+      const body: Record<string, string> = { locale };
+      formData.forEach((value, key) => {
+        if (typeof value === "string") body[key] = value;
+      });
 
-      const formData = new FormData(form);
-      formData.delete("website"); // honeypot: ya validado arriba, no hace falta mandarlo
-      const body = Object.fromEntries(formData.entries());
+      try {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify(body),
+        });
+        const result = (await response.json().catch(() => ({}))) as { ok?: boolean; error?: string };
 
-      fetch(contactEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify(body),
-      })
-        .then((response) => {
-          if (!response.ok) throw new Error("request_failed");
+        if (response.ok && result.ok) {
           form.reset();
           requiredFieldNames.forEach((name) => getField(name)?.setAttribute("aria-invalid", "false"));
           showStatus("success");
-        })
-        .catch(() => {
-          showStatus("error");
-        })
-        .finally(() => {
-          setLoading(false);
-        });
+        } else if (result.error === "invalid_fields") {
+          showStatus("invalid");
+        } else if (result.error === "captcha_failed") {
+          showStatus("captcha");
+        } else {
+          showStatus("sendError");
+        }
+      } catch {
+        showStatus("sendError");
+      } finally {
+        resetTurnstile();
+        setLoading(false);
+      }
     });
+  }
+
+  document.addEventListener("astro:page-load", () => {
+    document.querySelectorAll<HTMLFormElement>("form[data-contact-form]").forEach(setupContactForm);
   });
 </script>
