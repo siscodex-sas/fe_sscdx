@@ -38,8 +38,11 @@ const scriptI18n = {
   submittingLabel: t("contact.form.submitting"),
 };
 
+// text-base (16px) en mobile, no text-sm (14px): iOS Safari hace zoom automático
+// al enfocar cualquier input/select/textarea con font-size menor a 16px — pasa
+// justo al fallar la validación y hacer focus() en el primer campo inválido.
 const inputClasses =
-  "rounded-md border border-ink-600 bg-ink-900/60 px-4 py-2.5 text-sm text-ink-50 placeholder:text-ink-500 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400/30 aria-[invalid=true]:border-danger-400 aria-[invalid=true]:focus:border-danger-400 aria-[invalid=true]:focus:ring-danger-400/30";
+  "rounded-md border border-ink-600 bg-ink-900/60 px-4 py-2.5 text-base sm:text-sm text-ink-50 placeholder:text-ink-500 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400/30 aria-[invalid=true]:border-danger-400 aria-[invalid=true]:focus:border-danger-400 aria-[invalid=true]:focus:ring-danger-400/30";
 ---
 
 <section class="relative overflow-hidden py-24" id="contacto">

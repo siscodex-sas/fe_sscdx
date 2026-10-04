@@ -425,146 +425,16 @@ puro) de una exploración con 3 direcciones + 5 tratamientos de ícono en un Art
     múltiples destinatarios sin restricción de plan, a diferencia de Formspree gratis que solo
     admite 1 email de notificación), no volver a intentar Cloudflare Email Routing. El honeypot
     (`website`) solo se valida del lado del cliente (no hay backend propio todavía que lo revise
-    de nuevo) — Formspree tiene su propio filtro de spam por su cuenta. **Reemplazado por el punto
-    26** (Pages Function + Turnstile + Resend) — la premisa de "migrar a la API de Zoho" no se
-    sostuvo: el plan gratis de Zoho Mail no incluye SMTP/API de envío.
-26. **Formulario de contacto: Pages Function + Turnstile + Resend (reemplaza Formspree).** Se
-    evaluaron las opciones con el cliente antes de implementar — comparación completa con ventajas
-    de cada opción en [`docs/ENVIO-DE-CORREOS.md`](docs/ENVIO-DE-CORREOS.md). Decisiones y por qué:
-    - **Resend, no Cloudflare Email Routing/`send_email`**: Email Routing exige que los MX de
-      `siscodex.com` apunten a Cloudflare, y el correo corporativo va a vivir en **Zoho Mail** (sus
-      propios MX) — no pueden convivir en el mismo dominio. Además solo envía a direcciones
-      verificadas y su binding no existe en Pages Functions (punto 25). Cloudflare Email Sending
-      (envío a cualquiera) sí existe, pero en beta y con Workers Paid (5 USD/mes). Resend: plan
-      gratis 3.000 correos/mes, 100/día, y convive con Zoho en el DNS (Resend usa dos CNAME,
-      `send` y `rsend`, en "DNS only" — con la nube naranja no verifica — más el TXT
-      `resend._domainkey` para DKIM; Zoho usa MX/SPF de la raíz y `zmail._domainkey`. El DMARC es
-      uno solo, compartido. "Enable Receiving" de Resend queda apagado: el correo entrante es de
-      Zoho). Dominio verificado en Resend en octubre de 2026.
-    - **Pages Function, no Worker aparte**: mismo repo, mismo deploy automático, mismo dominio
-      (`/api/contact`, sin CORS y sin abrir el CSP a otro origen), variables en el mismo proyecto.
-      Un Worker solo haría falta para bindings que Pages no tiene, y con Resend basta un `fetch`.
-    - **Turnstile** (antispam de Cloudflare, gratis) porque el endpoint es público por naturaleza —
-      la función rechaza cualquier petición sin token válido (un solo uso, 5 min). Además:
-      destinatarios fijos (`CONTACT_TO`, la API no deja elegir a quién enviar — no se puede usar
-      como relay), chequeo de `Origin` mismo-host, honeypot revalidado en servidor, límites de
-      longitud por campo, HTML escapado en la plantilla, y CR/LF removidos del subject.
-    - **Solo notificación interna, sin correo de confirmación al visitante** (por ahora): sería el
-      único vector para mandar correo con remitente Siscodex a direcciones ajenas, y duplica la
-      cuota. Si se agrega, es otra plantilla en `src/emails/`.
-    - **Variables: sin script que genere un `.ts` con los valores.** Se descartó la idea (hubiera
-      escrito secretos en archivos de build, con riesgo de terminar en `dist/`). En producción la
-      función los recibe en runtime vía `context.env` (Cloudflare Pages → Variables and Secrets);
-      en local `wrangler pages dev` lee el mismo `.env` de la raíz de forma nativa. La única
-      variable que necesita el build es `PUBLIC_TURNSTILE_SITE_KEY` (pública por diseño), que Astro
-      lee de `import.meta.env` como `PUBLIC_GA_MEASUREMENT_ID`.
-    - **Bug latente corregido de paso**: el `<script is:inline define:vars>` anterior de
-      `ContactForm.astro` se re-ejecutaba en cada navegación con `<ClientRouter />` y sumaba
-      listeners de `submit` — tras ir y volver a /contacto, un clic enviaba varias peticiones (con
-      Resend: correos duplicados, y un error visible porque el token de Turnstile ya se había
-      gastado). Ahora es un `<script>` empaquetado que lee la config de los `data-*` del form y
-      marca el form con `data-contact-ready` — misma familia de bug que el punto 14.
-    - **Ubicación del visitante en la notificación**: ciudad, región y país salen de `request.cf`
-      (geolocalización por IP que Cloudflare agrega a cada petición, gratis), no de campos del
-      formulario — el cliente pidió saber "desde dónde escribe" sin alargar el formulario. Es
-      aproximada (VPN/red corporativa/datos móviles la desvían) y el correo lo aclara ("aprox.,
-      según IP"); el país se traduce con `Intl.DisplayNames` (`CO` → "Colombia"), la región viene
-      en inglés tal como la da Cloudflare. En `wrangler pages dev` también funciona (usa la
-      geolocalización real de la conexión local).
-    - **Tipos de la función a mano** (interfaz `PagesContext`), sin `@cloudflare/workers-types`:
-      solo usa APIs web estándar que ya trae el lib DOM del tsconfig de Astro, así `astro check`
-      la cubre sin tsconfig aparte ni tipos globales que choquen con Astro.
-    - **Turnstile por entorno**: claves de **prueba** (`1x000...AA`, siempre en pareja site/secret)
-      en el `.env` local y en el entorno Preview de Cloudflare; las **reales** solo en Production.
-      La site key real solo funciona en los hostnames del widget (`siscodex.com`): en `localhost`
-      da el error **110200** ("domain not allowed") — no es un bug, es esto. No agregar `localhost`
-      al widget de producción; si hace falta un widget real en local, crear uno aparte.
-    - **Probado de punta a punta en local** (`npm run dev:cf`) con API key real de Resend: el
-      correo llega con ubicación y constancia de autorización. Rechazos verificados con `curl`
-      (Origin, JSON, campos, honeypot, sin token, sin autorización). Un error "API key is invalid"
-      que apareció en las pruebas era la línea del `.env` con el nombre duplicado
-      (`RESEND_API_KEY=RESEND_API_KEY=re_...`), no la clave — revisar eso primero si reaparece.
-    - **Destinatario y remitente**: `CONTACT_TO=contacto@siscodex.com` (buzón real en Zoho; se
-      recomendó convertirlo en grupo de Zoho para que llegue a los 3 socios, con un responsable de
-      la primera respuesta). `CONTACT_FROM` en una dirección propia que no hace falta crear en
-      Zoho (p. ej. `formulario@siscodex.com`) — **no** usar `contacto@` como remitente: las
-      notificaciones se mezclarían con lo enviado y los filtros antispam desconfían de "de mí para
-      mí" enviado por otro servidor.
-
-27. **Política de privacidad conforme a la Ley 1581 de 2012 + autorización en el formulario.**
-    Surgió al agregar la ubicación por IP (punto 26), con el pedido explícito del cliente de "que
-    no haya una fuga a nivel legal". Al revisar la política vieja apareció algo más grave: decía
-    que el sitio "no utiliza cookies de seguimiento ni analítica de terceros", falso desde que se
-    agregó GA4 (punto 24); tampoco tenía el contenido mínimo del art. 13 del Decreto 1377 de 2013,
-    y el correo de contacto era `hola@siscodex.com` (no existe — el real es `contacto@siscodex.com`,
-    también corregido en `/legal/terminos`, el mensaje de error del formulario y `.env.example`). Se reescribió `/legal/privacidad` (ES y EN) con: responsable
-    del tratamiento, datos recopilados (formulario, ubicación aproximada por IP, Turnstile, GA4,
-    `localStorage` del tema), finalidades, autorización, encargados y transferencia internacional
-    (Cloudflare, Resend, Zoho, Google), derechos del art. 8, procedimiento con los plazos legales
-    (consultas 10 + 5 días hábiles, reclamos 15 + 8), cookies, conservación y vigencia.
-    - **Datos legales en `src/data/company.ts`** (razón social, NIT, dirección, ciudad, teléfono,
-      correo, fecha de vigencia) — un solo lugar para las dos versiones. **No se inventaron**: un
-      campo vacío se muestra en la política como texto entre paréntesis que dice qué hay que poner
-      (objeto `pending` de cada página, pedido explícito del cliente), así el hueco queda visible
-      hasta completarlo en vez de desaparecer en silencio. Incluye `legalName` (no está confirmado
-      que sea "Siscodex S.A.S.").
-    - **Casilla obligatoria de autorización en `ContactForm.astro`** (`privacyConsent`, enlaza a la
-      política en el idioma actual, en pestaña nueva para no perder lo escrito). La función la
-      revalida (`privacyConsent !== "on"` → `invalid_fields`) y la plantilla del correo deja la
-      constancia ("Autorización de datos: aceptó la política vigente desde AAAA-MM-DD") — el art. 9
-      exige conservar prueba de la autorización, así que **los correos de notificación en Zoho no
-      deben borrarse** mientras dure la relación con esa persona.
-    - **Si cambia la política de forma sustancial**, actualizar `privacyPolicyEffectiveDate`: esa
-      fecha es la "versión" que queda registrada en cada autorización nueva.
-    - Redactada por Claude a partir de la norma, no por un abogado — ver Pendientes.
-
-28. **Banner de consentimiento de cookies para GA4** (`CookieConsent.astro` +
-    `src/scripts/analytics.ts`): pedido por el cliente tras el punto 27. Antes, `gtag.js` se cargaba
-    incondicional en el `<head>` de `BaseLayout.astro` (punto 24); ahora **no se carga hasta que el
-    visitante acepta** — modelo "bloqueo previo" (no Consent Mode de Google en modo básico/avanzado:
-    sin consentimiento no sale ni una petición a Google, que es la lectura más estricta del RGPD y
-    la que no requiere configurar nada en GA).
-    - La elección se guarda en `localStorage` (`siscodex:cookie-consent`, JSON `{status, at}`) y
-      vence a los 12 meses. Rechazar después de aceptar pone `ga-disable-<ID>` y borra las cookies
-      `_ga*` (probando las variantes de `domain`, porque una cookie solo se borra con el mismo).
-    - "Aceptar" y "Rechazar" tienen **el mismo estilo a propósito** (guías RGPD/EDPB: rechazar debe
-      ser igual de fácil). No convertir "Aceptar" en botón primario verde "para mejorar la tasa".
-    - **Diseño discreto a pedido del cliente**: tarjeta pequeña (`max-w-xs`) en la esquina inferior
-      izquierda en desktop (ancho completo con margen en móvil), `text-xs`, texto de una línea
-      ("Usamos cookies de analítica solo si las aceptas. Más información") — el detalle vive en la
-      sección 7 de la política (enfoque "por capas", válido para consentimiento informado). No es
-      un muro que bloquee el sitio: se puede navegar sin elegir, y GA sigue sin cargar mientras
-      tanto.
-    - Reabrible desde "Preferencias de cookies" en el Footer (`data-cookie-preferences`, delegación
-      de clics en `document` — patrón del punto 14). Banner y enlace solo se renderizan si
-      `PUBLIC_GA_MEASUREMENT_ID` existe: sin GA no hay cookies que consentir.
-    - Al aceptar a mitad de una página se manda el `page_view` de esa página en el momento (GA no
-      estaba cargado cuando pasó su `astro:page-load`).
-    - **Efecto esperado en GA4**: menos visitas registradas que antes (solo cuentan quienes
-      aceptan). No es un bug de la integración.
-    - La política (sección 7, `id="cookies"`, enlazada desde el banner) se actualizó para
-      describir este funcionamiento.
-    - **Validado en navegador real** (Chromium headless vía Playwright, instalado fuera del repo en
-      el scratchpad de la sesión, con el CSP real de `wrangler pages dev`): 21 de 21 pruebas — sin
-      elegir y al rechazar no se descarga `gtag.js` ni sale ningún dato; al aceptar se envía
-      `page_view` (también en navegación SPA) y se crean `_ga`/`_ga_<ID>`; revocar desde el footer
-      borra las cookies y corta los envíos. Las peticiones a GA se interceptaron y bloquearon para
-      no ensuciar las métricas reales.
-
-29. **Siscodex aún no está constituida legalmente → sección "Responsable del tratamiento"
-    desactivada.** Con la empresa sin constituir no hay razón social, NIT ni domicilio que
-    publicar, y mostrar los textos entre paréntesis del punto 27 en producción, o una "S.A.S." que
-    no existe, era peor que omitirlos. A pedido del cliente, la sección quedó **comentada (no
-    borrada)** en `legal/privacidad.astro` y `en/legal/privacidad.astro` (comentario JSX con
-    instrucciones), y las demás secciones se renumeraron 1–9 (cookies pasó de la 8 a la 7). El
-    párrafo de cumplimiento de la Ley 1581 y el correo de contacto (sección 6) siguen visibles.
-    - **Riesgo asumido, no resuelto**: el art. 13 del Decreto 1377 exige identificar al
-      responsable. Mientras no exista la sociedad, el responsable real son las personas naturales
-      detrás del proyecto; la alternativa más sólida (propuesta, no implementada) es nombrar a una
-      de ellas como responsable hasta constituir la empresa.
-    - **Al constituir la empresa**: completar `src/data/company.ts`, quitar el comentario en las
-      dos páginas y volver a numerar (+1 a todas; "Ver la sección 7" → 8, y los "sección 7" de
-      este archivo, punto 28).
+    de nuevo) — Formspree tiene su propio filtro de spam por su cuenta.
+26. **Bug de zoom automático en iOS al fallar la validación del formulario**: en mobile Safari, al
+    dar "Enviar solicitud" sin llenar los campos, la página saltaba haciendo zoom — no era un bug
+    de scroll ni de layout, es un comportamiento nativo de iOS Safari: cualquier `input`/`select`/
+    `textarea` con `font-size` menor a 16px dispara zoom automático de la página al recibir foco, y
+    el script de validación hace `firstInvalid.focus()` en el primer campo inválido. `inputClasses`
+    en `ContactForm.astro` usaba `text-sm` (14px) — se cambió a `text-base sm:text-sm` (16px en
+    mobile, 14px desde `sm:` en adelante, sin tocar el diseño de escritorio). Si se agrega un campo
+    de formulario nuevo en cualquier parte del sitio, aplicar el mismo patrón (`text-base sm:text-sm`
+    o directamente nunca bajar de 16px en mobile) para no reintroducir este bug.
 
 ## Pendientes conocidos antes de un lanzamiento real
 
