@@ -78,9 +78,9 @@ Proveedor especializado en correo transaccional, con API HTTP.
 
 - **Gratis:** 3.000 correos al mes y 100 al día, muy por encima del volumen de un formulario de
   contacto corporativo.
-- **Convive con Zoho Mail sin conflictos de DNS:** Resend usa el subdominio `send.siscodex.com`
-  para SPF/return-path y el registro `resend._domainkey` para DKIM; Zoho usa la raíz y
-  `zmail._domainkey`.
+- **Convive con Zoho Mail sin conflictos de DNS:** Resend usa dos CNAME en subdominios (`send` y
+  `rsend`, en modo "DNS only") y el registro `resend._domainkey` para DKIM; Zoho usa el MX y el SPF
+  de la raíz y `zmail._domainkey`. Verificado en octubre de 2026.
 - **Funciona desde una Cloudflare Pages Function** con un simple `fetch`: mismo repo, mismo
   despliegue automático y mismo dominio (`siscodex.com/api/contact`), sin un Worker aparte.
 - Envía a varios destinatarios (variable `CONTACT_TO`) y permite agregar el correo de confirmación

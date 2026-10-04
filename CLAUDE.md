@@ -8,8 +8,9 @@ duplica.
 ## Qué es esto
 
 Sitio web corporativo de **Siscodex** (siscodex.com): estudio de ingeniería de software
-(desarrollo a medida, cloud, IA). Astro 7 + TypeScript estricto + Tailwind CSS v4, 100% estático,
-sin backend todavía. Inspiración visual: Vercel/Linear/Stripe.
+(desarrollo a medida, cloud, IA). Astro 7 + TypeScript estricto + Tailwind CSS v4, estático salvo
+una sola Cloudflare Pages Function (`functions/api/contact.ts`, el formulario de contacto — ver
+punto 26). Inspiración visual: Vercel/Linear/Stripe.
 
 ## Comandos
 
@@ -389,8 +390,9 @@ puro) de una exploración con 3 direcciones + 5 tratamientos de ícono en un Art
     `G-PKMJ32HD6V`): `gtag.js` se carga (hoy desde `src/scripts/analytics.ts` y solo con consentimiento de cookies, ver
     punto 28) solo si `PUBLIC_GA_MEASUREMENT_ID`
     está seteada — así los builds locales/preview no ensucian las métricas reales; la variable
-    solo existe en Cloudflare Pages → Settings → Environment variables → **Production** (nunca en
-    `.env` ni commiteada). Con `<ClientRouter />` las navegaciones no recargan la página, así que
+    solo existe en Cloudflare Pages → Settings → Environment variables → **Production** (nunca el ID
+    real en `.env` ni commiteado; en local se usa un ID falso como `G-TEST123` para ver el banner del
+    punto 28 sin ensuciar las métricas). Con `<ClientRouter />` las navegaciones no recargan la página, así que
     dejar que `gtag("config", ...)` mande su `page_view` automático solo contaría la carga inicial
     — se usa `send_page_view: false` y en su lugar se manda un evento `page_view` manual en cada
     `astro:page-load` (mismo listener que ya usa `initScrollReveal`), cubriendo carga inicial y
@@ -434,9 +436,11 @@ puro) de una exploración con 3 direcciones + 5 tratamientos de ícono en un Art
       propios MX) — no pueden convivir en el mismo dominio. Además solo envía a direcciones
       verificadas y su binding no existe en Pages Functions (punto 25). Cloudflare Email Sending
       (envío a cualquiera) sí existe, pero en beta y con Workers Paid (5 USD/mes). Resend: plan
-      gratis 3.000 correos/mes, 100/día, y convive con Zoho en el DNS (Resend usa el subdominio
-      `send.` para SPF/return-path y `resend._domainkey` para DKIM; Zoho usa la raíz y
-      `zmail._domainkey`).
+      gratis 3.000 correos/mes, 100/día, y convive con Zoho en el DNS (Resend usa dos CNAME,
+      `send` y `rsend`, en "DNS only" — con la nube naranja no verifica — más el TXT
+      `resend._domainkey` para DKIM; Zoho usa MX/SPF de la raíz y `zmail._domainkey`. El DMARC es
+      uno solo, compartido. "Enable Receiving" de Resend queda apagado: el correo entrante es de
+      Zoho). Dominio verificado en Resend en octubre de 2026.
     - **Pages Function, no Worker aparte**: mismo repo, mismo deploy automático, mismo dominio
       (`/api/contact`, sin CORS y sin abrir el CSP a otro origen), variables en el mismo proyecto.
       Un Worker solo haría falta para bindings que Pages no tiene, y con Resend basta un `fetch`.
@@ -470,18 +474,30 @@ puro) de una exploración con 3 direcciones + 5 tratamientos de ícono en un Art
     - **Tipos de la función a mano** (interfaz `PagesContext`), sin `@cloudflare/workers-types`:
       solo usa APIs web estándar que ya trae el lib DOM del tsconfig de Astro, así `astro check`
       la cubre sin tsconfig aparte ni tipos globales que choquen con Astro.
-    - Probado en local con `wrangler pages dev` (no con correo real, faltaba la API key de
-      Resend): todos los rechazos (Origin, JSON, campos, honeypot, sin token) responden bien, y un
-      token de prueba de Turnstile pasa la verificación real contra Cloudflare y llega hasta
-      Resend.
+    - **Turnstile por entorno**: claves de **prueba** (`1x000...AA`, siempre en pareja site/secret)
+      en el `.env` local y en el entorno Preview de Cloudflare; las **reales** solo en Production.
+      La site key real solo funciona en los hostnames del widget (`siscodex.com`): en `localhost`
+      da el error **110200** ("domain not allowed") — no es un bug, es esto. No agregar `localhost`
+      al widget de producción; si hace falta un widget real en local, crear uno aparte.
+    - **Probado de punta a punta en local** (`npm run dev:cf`) con API key real de Resend: el
+      correo llega con ubicación y constancia de autorización. Rechazos verificados con `curl`
+      (Origin, JSON, campos, honeypot, sin token, sin autorización). Un error "API key is invalid"
+      que apareció en las pruebas era la línea del `.env` con el nombre duplicado
+      (`RESEND_API_KEY=RESEND_API_KEY=re_...`), no la clave — revisar eso primero si reaparece.
+    - **Destinatario y remitente**: `CONTACT_TO=contacto@siscodex.com` (buzón real en Zoho; se
+      recomendó convertirlo en grupo de Zoho para que llegue a los 3 socios, con un responsable de
+      la primera respuesta). `CONTACT_FROM` en una dirección propia que no hace falta crear en
+      Zoho (p. ej. `formulario@siscodex.com`) — **no** usar `contacto@` como remitente: las
+      notificaciones se mezclarían con lo enviado y los filtros antispam desconfían de "de mí para
+      mí" enviado por otro servidor.
 
 27. **Política de privacidad conforme a la Ley 1581 de 2012 + autorización en el formulario.**
     Surgió al agregar la ubicación por IP (punto 26), con el pedido explícito del cliente de "que
     no haya una fuga a nivel legal". Al revisar la política vieja apareció algo más grave: decía
     que el sitio "no utiliza cookies de seguimiento ni analítica de terceros", falso desde que se
     agregó GA4 (punto 24); tampoco tenía el contenido mínimo del art. 13 del Decreto 1377 de 2013,
-    y el correo de contacto era `hola@siscodex.com` (no existe — el real es `info@`, también
-    corregido en `/legal/terminos`). Se reescribió `/legal/privacidad` (ES y EN) con: responsable
+    y el correo de contacto era `hola@siscodex.com` (no existe — el real es `contacto@siscodex.com`,
+    también corregido en `/legal/terminos`, el mensaje de error del formulario y `.env.example`). Se reescribió `/legal/privacidad` (ES y EN) con: responsable
     del tratamiento, datos recopilados (formulario, ubicación aproximada por IP, Turnstile, GA4,
     `localStorage` del tema), finalidades, autorización, encargados y transferencia internacional
     (Cloudflare, Resend, Zoho, Google), derechos del art. 8, procedimiento con los plazos legales
@@ -528,6 +544,12 @@ puro) de una exploración con 3 direcciones + 5 tratamientos de ícono en un Art
       aceptan). No es un bug de la integración.
     - La política (sección 7, `id="cookies"`, enlazada desde el banner) se actualizó para
       describir este funcionamiento.
+    - **Validado en navegador real** (Chromium headless vía Playwright, instalado fuera del repo en
+      el scratchpad de la sesión, con el CSP real de `wrangler pages dev`): 21 de 21 pruebas — sin
+      elegir y al rechazar no se descarga `gtag.js` ni sale ningún dato; al aceptar se envía
+      `page_view` (también en navegación SPA) y se crean `_ga`/`_ga_<ID>`; revocar desde el footer
+      borra las cookies y corta los envíos. Las peticiones a GA se interceptaron y bloquearon para
+      no ensuciar las métricas reales.
 
 29. **Siscodex aún no está constituida legalmente → sección "Responsable del tratamiento"
     desactivada.** Con la empresa sin constituir no hay razón social, NIT ni domicilio que
@@ -546,12 +568,21 @@ puro) de una exploración con 3 direcciones + 5 tratamientos de ícono en un Art
 
 ## Pendientes conocidos antes de un lanzamiento real
 
+- **Error de CSP en consola (preexistente, sin impacto visual)**: la variante cirílica de JetBrains
+  Mono pesa < 4 KB y Vite la embebe en el CSS como `data:font/woff2`; el CSP (`font-src 'self'`) la
+  bloquea. El sitio no usa caracteres cirílicos. Arreglo propuesto, no aplicado: que Vite no
+  embeba fuentes (`build.assetsInlineLimit` en `astro.config.mjs`).
+- **Términos de servicio**: hoy solo Alcance / Propiedad intelectual / Contacto. Se propuso (sin
+  implementar) agregar marcas de terceros (los logos de `/tecnologia` no implican alianza),
+  contenido informativo no vinculante, uso aceptable, limitación de responsabilidad, enlaces a
+  terceros, remisión a la política de privacidad, ley aplicable (Colombia) y vigencia; y redactar
+  la propiedad intelectual como "Siscodex y sus fundadores" mientras no exista la sociedad.
 - `public/og/default.svg` es un placeholder generado por código (gradiente + logo + texto).
   Twitter/X no renderiza SVG en `og:image` — sustituir por un PNG/JPG 1200×630 real antes de
   publicar (ver `docs/ARCHITECTURE.md` §5.4).
 - **Formulario de contacto (punto 26): código listo, falta configuración fuera del repo** —
-  (1) Zoho Mail activo en `siscodex.com` (MX/SPF/DKIM en Cloudflare DNS, CNAMEs en "DNS only");
-  (2) dominio verificado en Resend (sus registros DNS en Cloudflare) + API key; (3) widget de
+  ~~(1) Zoho Mail activo~~ ✅ y ~~(2) dominio verificado en Resend~~ ✅ (octubre 2026, confirmado
+  con `dig`); falta: crear una API key de Resend solo para producción; (3) widget de
   Turnstile creado en el dashboard de Cloudflare con hostname `siscodex.com`; (4) variables en
   Cloudflare Pages (ver `docs/ARCHITECTURE.md` §7.6); (5) regla de rate limiting en Cloudflare →
   Security → WAF (p. ej. 5 peticiones/10 min por IP a `/api/contact`); (6) prueba real en
@@ -570,7 +601,8 @@ puro) de una exploración con 3 direcciones + 5 tratamientos de ícono en un Art
   ha revisado un hablante nativo de inglés. Antes de un lanzamiento real, vale la pena una pasada
   de revisión humana, especialmente en el copy de marketing (Hero, WhyUs, especialidades).
 - **El modo claro se implementó y compila sin errores, pero Claude no lo vio en un navegador real**
-  (no hay herramienta de automatización de navegador en este entorno) — los valores de contraste
+  (al implementarlo no había navegador automatizado; desde el punto 28 se sabe que Playwright se
+  puede instalar en el scratchpad y usar sin tocar el repo, así que ya es verificable) — los valores de contraste
   se calcularon a mano, no se verificaron con una herramienta real. Antes de darlo por terminado,
   alguien debería recorrer el sitio completo en modo claro (todas las páginas, ambos idiomas,
   mobile) y revisar especialmente: la tarjeta de equipo (flip 3D), los blobs decorativos de fondo,
@@ -589,6 +621,12 @@ Netlify. Ver punto 23 de "Historial de decisiones" para el porqué de la migraci
 (Pages Functions) se despliega automáticamente en el mismo push — hoy solo `/api/contact`, que
 necesita las variables `RESEND_API_KEY`, `TURNSTILE_SECRET_KEY`, `CONTACT_TO`, `CONTACT_FROM`
 (runtime) y `PUBLIC_TURNSTILE_SITE_KEY` (build) en Settings → Variables and Secrets.
+
+Build en Cloudflare: `npm run build`, salida `dist`, root vacío (la raíz es obligatoria para que
+detecte `functions/`). **Node**: Cloudflare usa el default de su imagen de build v3 (22.16.0) —
+**no lee `engines` de `package.json`**, solo `NODE_VERSION` o `.nvmrc`/`.node-version`, y el repo no
+tiene ninguno. Astro 7 exige ≥ 22.12, así que hoy compila; el `engines` del `package.json`
+(`>=20.3.0`) está desactualizado (propuesto, no aplicado: `.nvmrc` con `22` y `engines` ≥ 22.12).
 
 GitHub Pages **ya no se usa** (decomisionado: se borró `.github/workflows/deploy.yml`,
 `public/CNAME`, y se deshabilitó Pages en la configuración del repo) — si aparece cualquiera de

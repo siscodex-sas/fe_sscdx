@@ -776,10 +776,11 @@ escriben en el build).
 
 ### 8.3 Testing — estructura recomendada
 
-El proyecto no incluye tests automatizados en esta primera entrega porque no hay lógica de
-negocio no trivial que testear (es contenido estático + un formulario sin backend). Cuando se
-integre el backend del formulario o se añada lógica (p. ej. filtrado de proyectos, validación
-compleja), la estructura recomendada es:
+El proyecto no incluye tests automatizados en esta primera entrega porque no había lógica de
+negocio no trivial que testear. Eso ya cambió en parte: `functions/api/contact.ts` (validación,
+Turnstile, envío) y `src/scripts/analytics.ts` (consentimiento de cookies) son hoy los primeros
+candidatos a tests — se validaron a mano con `curl` y con Playwright (ver `CLAUDE.md` puntos 26
+y 28), pero sin una suite versionada. La estructura recomendada es:
 
 - **Unit**: [Vitest](https://vitest.dev) para funciones puras de `src/utils/` (`seo.ts` y
   las que se añadan).
